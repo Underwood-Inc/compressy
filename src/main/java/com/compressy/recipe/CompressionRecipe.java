@@ -324,6 +324,7 @@ public class CompressionRecipe extends SpecialCraftingRecipe {
      * What CANNOT be compressed:
      * - Items without block form (swords, food, tools, etc.)
      * - Air (obviously)
+     * - Blocks in the exclusion list (config)
      */
     private boolean isCompressibleItem(ItemStack stack) {
         var item = stack.getItem();
@@ -337,7 +338,13 @@ public class CompressionRecipe extends SpecialCraftingRecipe {
             return getCompressionLevel(stack) > 0;
         }
         
-        // It's a block item - allow compression!
+        // Check config exclusions
+        String blockId = net.minecraft.registry.Registries.BLOCK.getId(block).toString();
+        if (com.compressy.config.CompressyConfig.get().isBlockExcluded(blockId)) {
+            return false;
+        }
+        
+        // It's a block item and not excluded - allow compression!
         return true;
     }
     
@@ -350,7 +357,7 @@ public class CompressionRecipe extends SpecialCraftingRecipe {
             return 0;
         }
         var nbt = customData.copyNbt();
-        return nbt.getInt("compressed_level").orElse(0);
+        return com.compressy.util.NbtHelper.getInt(nbt, "compressed_level", 0);
     }
     
     /**
@@ -362,7 +369,7 @@ public class CompressionRecipe extends SpecialCraftingRecipe {
             return "";
         }
         var nbt = customData.copyNbt();
-        return nbt.getString("compressed_block").orElse("");
+        return com.compressy.util.NbtHelper.getString(nbt, "compressed_block", "");
     }
     
     /**

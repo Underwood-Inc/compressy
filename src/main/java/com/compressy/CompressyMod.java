@@ -27,19 +27,37 @@ import net.minecraft.util.Identifier;
 /**
  * Compressy - Compress ANY block up to 32 times!
  * 
- * A Minecraft mod that allows compressing blocks into super-dense variants.
- * Uses Minecraft's block tags for automatic support - no giant config needed!
+ * A Minecraft Fabric mod that allows compressing blocks into super-dense variants.
+ * Works automatically with ALL blocks (vanilla + modded) via dynamic recipe system.
  * 
- * Compression levels:
- * - Level 1: 9 blocks (3x3)
- * - Level 2: 81 blocks (9^2)
- * - Level 3: 729 blocks (9^3)
- * - ...
- * - Level 32: 9^32 blocks (astronomical!)
+ * HOW IT WORKS:
+ * - Place 9 blocks in a 3×3 crafting grid → get 1 compressed block
+ * - Craft a compressed block alone → get 9 blocks back
+ * - Works with crafting tables, autocrafters, and mod machines (AE2, Create, etc.)
+ * 
+ * COMPRESSION LEVELS:
+ * - Level 1: 9 blocks (3×3)
+ * - Level 2: 81 blocks (9²)
+ * - Level 3: 729 blocks (9³)
+ * - ...up to Level 32: 9^32 blocks (astronomical!)
  * 
  * BUILD VARIANTS:
- * - FULL: Compressed blocks can be placed in world with visual overlays
- * - LITE: Compressed blocks are inventory-only (no placement, lighter weight)
+ * 
+ * FULL VERSION:
+ * - Compressed blocks CAN be placed in world
+ * - Visual overlays show compression tier (Roman numerals + darkening effect)
+ * - Uses marker entities to preserve compression data
+ * - Breaking returns the compressed block with all data intact
+ * - Best for: Creative builds, visual storage displays
+ * 
+ * LITE VERSION:
+ * - Compressed blocks CANNOT be placed (inventory-only)
+ * - No marker entities, no overlays, no world impact
+ * - Zero performance overhead
+ * - Best for: Servers, automation-focused gameplay, pure storage
+ * 
+ * NOTE: The mod is REQUIRED for compression to work. The bundled datapack
+ * provides helper functions but the recipes use custom Fabric serializers.
  */
 public class CompressyMod implements ModInitializer {
     public static final String MOD_ID = "compressy";
@@ -98,6 +116,10 @@ public class CompressyMod implements ModInitializer {
         LOGGER.info("===========================================");
         LOGGER.info("Mod loaded successfully! Mode: " + (LITE_MODE ? "LITE" : "FULL"));
         
+        // Load configuration
+        com.compressy.config.CompressyConfig.load();
+        LOGGER.info("Configuration loaded!");
+        
         // Register custom recipe types - THIS IS THE MAGIC!
         // These recipes work with ANY crafting table, machine, or automation mod!
         registerRecipes();
@@ -154,13 +176,6 @@ public class CompressyMod implements ModInitializer {
             cblocks.then(CommandManager.literal("help")
                     .executes(this::showHelp));
 
-            // /cblocks give subcommands
-            LiteralArgumentBuilder<ServerCommandSource> giveCommand = CommandManager.literal("give");
-            giveCommand.then(CommandManager.literal("compressor").executes(this::giveCompressor));
-            giveCommand.then(CommandManager.literal("wand").executes(this::giveWand));
-            giveCommand.then(CommandManager.literal("all").executes(this::giveAll));
-            cblocks.then(giveCommand);
-
             // /cblocks info - Show info about held compressed block
             cblocks.then(CommandManager.literal("info")
                     .executes(this::showBlockInfo));
@@ -206,14 +221,14 @@ public class CompressyMod implements ModInitializer {
         source.sendFeedback(() -> Text.literal(""), false);
         source.sendFeedback(() -> Text.literal("How to Compress Blocks:")
                 .formatted(Formatting.YELLOW).formatted(Formatting.BOLD), false);
-        source.sendFeedback(() -> Text.literal("  1. Get a Compressor with /cblocks give compressor")
+        source.sendFeedback(() -> Text.literal("  1. Place 9 blocks in a 3×3 crafting grid")
                 .formatted(Formatting.GRAY), false);
-        source.sendFeedback(() -> Text.literal("  2. Place the Compressor block")
+        source.sendFeedback(() -> Text.literal("  2. Get 1 compressed block!")
                 .formatted(Formatting.GRAY), false);
-        source.sendFeedback(() -> Text.literal("  3. Right-click with 9+ blocks to compress!")
+        source.sendFeedback(() -> Text.literal("  3. Craft alone to decompress back to 9")
                 .formatted(Formatting.GRAY), false);
-        source.sendFeedback(() -> Text.literal("  4. Shift+Right-click to decompress")
-                .formatted(Formatting.GRAY), false);
+        source.sendFeedback(() -> Text.literal("  ✦ Works with crafting tables & autocrafters!")
+                .formatted(Formatting.GREEN), false);
         source.sendFeedback(() -> Text.literal(""), false);
         source.sendFeedback(() -> Text.literal("Compression Levels:")
                 .formatted(Formatting.YELLOW).formatted(Formatting.BOLD), false);
@@ -231,65 +246,14 @@ public class CompressyMod implements ModInitializer {
         source.sendFeedback(() -> Text.literal("  /cblocks help")
                 .formatted(Formatting.GREEN)
                 .append(Text.literal(" - Show this help").formatted(Formatting.GRAY)), false);
-        source.sendFeedback(() -> Text.literal("  /cblocks give compressor")
-                .formatted(Formatting.GREEN)
-                .append(Text.literal(" - Get a Compressor").formatted(Formatting.GRAY)), false);
         source.sendFeedback(() -> Text.literal("  /cblocks info")
                 .formatted(Formatting.GREEN)
                 .append(Text.literal(" - Info about held block").formatted(Formatting.GRAY)), false);
-        source.sendFeedback(() -> Text.literal("  /cblocks decompress [n]")
-                .formatted(Formatting.GREEN)
-                .append(Text.literal(" - Decompress held block").formatted(Formatting.GRAY)), false);
         source.sendFeedback(() -> Text.literal(""), false);
         source.sendFeedback(() -> Text.literal("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
                 .formatted(Formatting.GOLD), false);
         
         return Command.SINGLE_SUCCESS;
-    }
-
-    private int giveCompressor(CommandContext<ServerCommandSource> ctx) {
-        ServerCommandSource source = ctx.getSource();
-        try {
-            ServerPlayerEntity player = source.getPlayerOrThrow();
-            
-            // Create compressor item directly using proper Java API (no permission required!)
-            net.minecraft.item.ItemStack compressor = new net.minecraft.item.ItemStack(net.minecraft.item.Items.LODESTONE);
-            
-            // Set custom name
-            compressor.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, 
-                Text.literal("Block Compressor")
-                    .styled(style -> style.withColor(net.minecraft.text.TextColor.parse("#FFD700").result().orElse(null)).withItalic(false).withBold(true)));
-            
-            // Set lore
-            java.util.List<Text> lore = java.util.List.of(
-                Text.literal("Right-click with blocks to compress!").styled(s -> s.withColor(Formatting.GRAY).withItalic(false)),
-                Text.literal("Shift+right-click to decompress").styled(s -> s.withColor(Formatting.GRAY).withItalic(false)),
-                Text.literal("").styled(s -> s.withItalic(false)),
-                Text.literal("Supports up to 32x compression!").styled(s -> s.withColor(Formatting.AQUA).withItalic(false))
-            );
-            compressor.set(net.minecraft.component.DataComponentTypes.LORE, new net.minecraft.component.type.LoreComponent(lore));
-            
-            // Set custom data
-            net.minecraft.nbt.NbtCompound customData = new net.minecraft.nbt.NbtCompound();
-            customData.putBoolean("compressedblocks_compressor", true);
-            compressor.set(net.minecraft.component.DataComponentTypes.CUSTOM_DATA, net.minecraft.component.type.NbtComponent.of(customData));
-            
-            // Add enchantment glint
-            compressor.set(net.minecraft.component.DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
-            
-            // Give directly to player - NO PERMISSION REQUIRED!
-            player.giveItemStack(compressor);
-            
-            source.sendFeedback(() -> Text.literal("[Compressy] ")
-                    .formatted(Formatting.GOLD).formatted(Formatting.BOLD)
-                    .append(Text.literal("Gave Compressor block!").formatted(Formatting.GREEN)), false);
-            
-            return Command.SINGLE_SUCCESS;
-        } catch (Exception e) {
-            source.sendError(Text.literal("This command must be run by a player!"));
-            LOGGER.error("Error giving compressor", e);
-            return 0;
-        }
     }
 
     private int showBlockInfo(CommandContext<ServerCommandSource> ctx) {
@@ -322,9 +286,9 @@ public class CompressyMod implements ModInitializer {
                 return Command.SINGLE_SUCCESS;
             }
             
-            // 1.21.11 API returns Optional types
-            int level = nbt.getInt("compressed_level").orElse(0);
-            String blockId = nbt.getString("compressed_block").orElse("unknown");
+            // Cross-version compatible NBT access
+            int level = com.compressy.util.NbtHelper.getInt(nbt, "compressed_level", 0);
+            String blockId = com.compressy.util.NbtHelper.getString(nbt, "compressed_block", "unknown");
             
             // Calculate total blocks (9^level)
             java.math.BigInteger totalBlocks = java.math.BigInteger.valueOf(9).pow(level);
@@ -353,7 +317,7 @@ public class CompressyMod implements ModInitializer {
         ServerCommandSource source = ctx.getSource();
         source.sendFeedback(() -> Text.literal("[Compressy] ")
                 .formatted(Formatting.GOLD)
-                .append(Text.literal("Use Shift+Right-click on a Compressor to decompress!")
+                .append(Text.literal("Place a compressed block alone in a crafting grid to decompress!")
                         .formatted(Formatting.YELLOW)), false);
         return Command.SINGLE_SUCCESS;
     }
@@ -373,60 +337,6 @@ public class CompressyMod implements ModInitializer {
         source.sendFeedback(() -> Text.literal("[Compressy] ")
                 .formatted(Formatting.GOLD).formatted(Formatting.BOLD)
                 .append(Text.literal("✓ Config reloaded!").formatted(Formatting.GREEN)), false);
-        return Command.SINGLE_SUCCESS;
-    }
-
-    private int giveWand(CommandContext<ServerCommandSource> ctx) {
-        ServerCommandSource source = ctx.getSource();
-        try {
-            ServerPlayerEntity player = source.getPlayerOrThrow();
-            
-            // Create wand item directly using proper Java API (no permission required!)
-            net.minecraft.item.ItemStack wand = new net.minecraft.item.ItemStack(net.minecraft.item.Items.CARROT_ON_A_STICK);
-            
-            // Set custom name
-            wand.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, 
-                Text.literal("Compression Wand")
-                    .styled(style -> style.withColor(net.minecraft.text.TextColor.parse("#FFD700").result().orElse(null)).withItalic(false).withBold(true)));
-            
-            // Set lore
-            java.util.List<Text> lore = java.util.List.of(
-                Text.literal("Right-click to compress held blocks!").styled(s -> s.withColor(Formatting.GRAY).withItalic(false)),
-                Text.literal("Shift+right-click to decompress").styled(s -> s.withColor(Formatting.GRAY).withItalic(false)),
-                Text.literal("").styled(s -> s.withItalic(false)),
-                Text.literal("Uses 9 blocks per compression").styled(s -> s.withColor(Formatting.AQUA).withItalic(false))
-            );
-            wand.set(net.minecraft.component.DataComponentTypes.LORE, new net.minecraft.component.type.LoreComponent(lore));
-            
-            // Set custom data
-            net.minecraft.nbt.NbtCompound customData = new net.minecraft.nbt.NbtCompound();
-            customData.putBoolean("compressedblocks_wand", true);
-            wand.set(net.minecraft.component.DataComponentTypes.CUSTOM_DATA, net.minecraft.component.type.NbtComponent.of(customData));
-            
-            // Add enchantment glint
-            wand.set(net.minecraft.component.DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
-            
-            // Give directly to player - NO PERMISSION REQUIRED!
-            player.giveItemStack(wand);
-            
-            source.sendFeedback(() -> Text.literal("[Compressy] ")
-                    .formatted(Formatting.GOLD).formatted(Formatting.BOLD)
-                    .append(Text.literal("Gave Compression Wand!").formatted(Formatting.GREEN)), false);
-            
-            return Command.SINGLE_SUCCESS;
-        } catch (Exception e) {
-            source.sendError(Text.literal("This command must be run by a player!"));
-            LOGGER.error("Error giving wand", e);
-            return 0;
-        }
-    }
-
-    private int giveAll(CommandContext<ServerCommandSource> ctx) {
-        giveCompressor(ctx);
-        giveWand(ctx);
-        ctx.getSource().sendFeedback(() -> Text.literal("[Compressy] ")
-                .formatted(Formatting.GOLD).formatted(Formatting.BOLD)
-                .append(Text.literal("Gave all items!").formatted(Formatting.GREEN)), false);
         return Command.SINGLE_SUCCESS;
     }
 

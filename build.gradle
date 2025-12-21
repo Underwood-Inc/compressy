@@ -3,15 +3,36 @@ plugins {
     id 'maven-publish'
 }
 
+// Multi-version support: load version-specific properties if mc_version is specified
+// Usage: ./gradlew build -Pmc_version=1.21.1
+if (project.hasProperty('mc_version')) {
+    def versionFile = file("versions/${project.mc_version}.properties")
+    if (versionFile.exists()) {
+        def props = new Properties()
+        versionFile.withInputStream { props.load(it) }
+        props.each { key, value ->
+            project.ext.set(key, value)
+        }
+        println "Building for Minecraft ${project.mc_version}"
+    } else {
+        throw new GradleException("No version config found for ${project.mc_version}. Check versions/ folder.")
+    }
+}
+
 version = project.mod_version
 group = project.maven_group
 
+// Include MC version in archive name for multi-version builds
+def mcVersion = project.minecraft_version
 base {
-    archivesName = project.archives_base_name
+    archivesName = "${project.archives_base_name}-${mcVersion}"
 }
 
 repositories {
-    // Add repositories to retrieve artifacts from in here.
+    // ModMenu
+    maven { url "https://maven.terraformersmc.com/releases/" }
+    // Cloth Config
+    maven { url "https://maven.shedaniel.me/" }
 }
 
 dependencies {
@@ -22,25 +43,27 @@ dependencies {
     
     // Fabric API for command registration
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-}
-
-// Task to sync datapack to mod resources before building
-task syncDatapack(type: Copy) {
-    description = 'Syncs datapack to mod resources folder'
-    from('data') {
-        into 'data'
+    
+    // Optional: ModMenu integration (config screen)
+    modCompileOnly("com.terraformersmc:modmenu:13.0.0-beta.1") {
+        transitive = false
     }
-    into 'src/main/resources'
+    
+    // Optional: Cloth Config (fancy config screen)
+    modCompileOnly("me.shedaniel.cloth:cloth-config-fabric:17.0.144") {
+        exclude(group: "net.fabricmc.fabric-api")
+    }
 }
-
-// Make sure syncDatapack runs before processing resources
-processResources.dependsOn syncDatapack
 
 processResources {
     inputs.property "version", project.version
+    inputs.property "minecraft_version", project.minecraft_version
 
     filesMatching("fabric.mod.json") {
-        expand "version": project.version
+        expand(
+            "version": project.version,
+            "minecraft_version": project.minecraft_version
+        )
     }
     
     // Ensure datapack pack.mcmeta is NOT overwritten by root one
@@ -57,9 +80,9 @@ java {
     targetCompatibility = JavaVersion.VERSION_21
 }
 
-// Configure sourcesJar after it's created
+// Configure sourcesJar
 tasks.named('sourcesJar') {
-    dependsOn syncDatapack
+    // Sources jar configuration
 }
 
 jar {
@@ -77,7 +100,7 @@ task jarLite(type: Jar) {
     description = 'Creates the LITE version JAR (no block placement)'
     dependsOn classes
     
-    archiveBaseName = "${project.archives_base_name}-lite"
+    archiveBaseName = "${project.archives_base_name}-${mcVersion}-lite"
     archiveVersion = project.mod_version
     archiveClassifier = ''
     
@@ -119,6 +142,9 @@ task generateLiteFabricMod {
             '"description": "Compress ANY block up to 32 times',
             '"description": "[LITE] Compress ANY block up to 32 times (no world placement)'
         )
+        // Replace version placeholder
+        content = content.replace('${version}', project.mod_version)
+        content = content.replace('${minecraft_version}', project.minecraft_version)
         destFile.text = content
     }
 }
@@ -130,22 +156,52 @@ jarLite {
     }
 }
 
-// Task to package standalone datapack (without mod code)
-task packageDatapack(type: Zip) {
-    description = 'Creates a standalone datapack zip'
-    archiveBaseName = "${project.archives_base_name}-datapack"
-    archiveVersion = project.mod_version
-    destinationDirectory = file("${buildDir}/datapacks")
+// Add tasks to build - creates both FULL and LITE jars
+build.dependsOn jarLite
+
+// Task to build all versions (use this for local development)
+task buildAllVersions {
+    description = 'Builds the mod for all supported Minecraft versions'
+    group = 'build'
     
-    from('data') {
-        into 'data'
+    doLast {
+        def versionsDir = file('versions')
+        def versionFiles = versionsDir.listFiles()?.findAll { it.name.endsWith('.properties') }?.sort { it.name }
+        
+        if (!versionFiles) {
+            println "No version files found in versions/ folder"
+            return
+        }
+        
+        println "Building for ${versionFiles.size()} Minecraft versions..."
+        
+        versionFiles.each { versionFile ->
+            def mcVer = versionFile.name.replace('.properties', '')
+            println "\n=========================================="
+            println "Building for Minecraft ${mcVer}..."
+            println "==========================================\n"
+            exec {
+                workingDir projectDir
+                if (System.getProperty('os.name').toLowerCase().contains('windows')) {
+                    commandLine 'cmd', '/c', 'gradlew.bat', 'clean', 'build', "-Pmc_version=${mcVer}", '--no-daemon'
+                } else {
+                    commandLine './gradlew', 'clean', 'build', "-Pmc_version=${mcVer}", '--no-daemon'
+                }
+            }
+        }
+        
+        println "\n=========================================="
+        println "All ${versionFiles.size()} versions built successfully!"
+        println "==========================================\n"
     }
-    from('pack.mcmeta')
 }
 
-// Add tasks to build - creates both FULL and LITE jars
-build.dependsOn packageDatapack
-build.dependsOn jarLite
+// Make buildAllVersions the default when no mc_version specified and running 'buildAll'
+task buildAll {
+    description = 'Alias for buildAllVersions'
+    group = 'build'
+    dependsOn buildAllVersions
+}
 
 // Configure the maven publication
 publishing {
@@ -158,4 +214,3 @@ publishing {
         // Add repositories to publish to here.
     }
 }
-

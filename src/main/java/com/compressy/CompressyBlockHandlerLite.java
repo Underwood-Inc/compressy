@@ -62,7 +62,7 @@ public class CompressyBlockHandlerLite {
         var customData = stack.get(DataComponentTypes.CUSTOM_DATA);
         if (customData == null) return 0;
         var nbt = customData.copyNbt();
-        return nbt.getInt("compressed_level").orElse(0);
+        return com.compressy.util.NbtHelper.getInt(nbt, "compressed_level", 0);
     }
 }
 

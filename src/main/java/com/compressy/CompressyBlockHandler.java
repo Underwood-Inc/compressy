@@ -140,21 +140,25 @@ public class CompressyBlockHandler {
             // Found a marker! This is a compressed block
             InteractionEntity marker = markers.get(0);
             
-            // Get compression data from marker's scoreboard or custom name
-            // We store it in the entity's custom name as a hack since interaction entities
-            // don't have proper NBT storage we can easily access
-            String customName = marker.getCustomName() != null ? marker.getCustomName().getString() : "";
+            // Get compression data from command tags
             int level = 1;
             String blockId = net.minecraft.registry.Registries.BLOCK.getId(state.getBlock()).toString();
             
-            // Parse from custom name format: "level:blockId"
-            if (customName.contains(":") && customName.matches("\\d+:.*")) {
-                String[] parts = customName.split(":", 2);
+            // Parse level and block ID from command tags
+            for (String tag : marker.getCommandTags()) {
+                if (tag.startsWith("compressy.level.")) {
                 try {
-                    level = Integer.parseInt(parts[0]);
-                    blockId = parts[1];
+                        level = Integer.parseInt(tag.substring("compressy.level.".length()));
                 } catch (NumberFormatException e) {
-                    // Use defaults
+                        // Use default
+                    }
+                } else if (tag.startsWith("compressy.block.")) {
+                    // Convert back from tag format (dots) to ID format (colon)
+                    String tagBlockId = tag.substring("compressy.block.".length());
+                    int firstDot = tagBlockId.indexOf('.');
+                    if (firstDot > 0) {
+                        blockId = tagBlockId.substring(0, firstDot) + ":" + tagBlockId.substring(firstDot + 1);
+                    }
                 }
             }
             
@@ -167,23 +171,18 @@ public class CompressyBlockHandler {
             // Remove the block without normal drops
             world.removeBlock(pos, false);
             
-            // Drop the compressed item
+            // Drop the compressed item in world (player must pick it up)
+            net.minecraft.entity.ItemEntity itemEntity = new net.minecraft.entity.ItemEntity(
+                world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, dropItem
+            );
+            world.spawnEntity(itemEntity);
+            
             if (player instanceof ServerPlayerEntity serverPlayer) {
-                if (!serverPlayer.giveItemStack(dropItem)) {
-                    serverPlayer.dropItem(dropItem, false);
-                }
-                
                 serverPlayer.sendMessage(
                     Text.literal("Retrieved compressed block (Tier " + toRoman(level) + ")")
                         .formatted(Formatting.GREEN),
                     true
                 );
-            } else {
-                // Drop at block position
-                net.minecraft.entity.ItemEntity itemEntity = new net.minecraft.entity.ItemEntity(
-                    world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, dropItem
-                );
-                world.spawnEntity(itemEntity);
             }
             
             // Play sound
@@ -212,21 +211,20 @@ public class CompressyBlockHandler {
             marker.setInteractionHeight(0.98f);
             marker.addCommandTag(MARKER_TAG);
             marker.addCommandTag("compressy.pos." + pos.getX() + "_" + pos.getY() + "_" + pos.getZ());
-            marker.addCommandTag("compressedblocks.level." + level);
-            // Store data in custom name (hacky but works in datapack-compatible way)
-            marker.setCustomName(Text.literal(level + ":" + blockId));
-            marker.setCustomNameVisible(false);
+            marker.addCommandTag("compressy.level." + level);
+            marker.addCommandTag("compressy.block." + blockId.replace(":", "."));
+            // No custom name - prevents flash on removal
             world.spawnEntity(marker);
         }
         
-        // 2. TEXT_DISPLAY - shows Roman numeral tier above the block
+        // 2. TEXT_DISPLAY - shows Roman numeral tier above the block (if enabled)
+        if (com.compressy.config.CompressyConfig.get().showRomanNumerals) {
         var textDisplay = EntityType.TEXT_DISPLAY.create(world, SpawnReason.COMMAND);
         if (textDisplay != null) {
             textDisplay.setPosition(x, y + 1.0, z);
             
             String roman = toRoman(level);
             int color = getTierColor(level);
-            int bgColor = getContrastBackgroundColor(level);
             
             ((DisplayEntity.TextDisplayEntity) textDisplay).setText(
                 Text.literal(" " + roman + " ")
@@ -236,14 +234,15 @@ public class CompressyBlockHandler {
             textDisplay.setBillboardMode(DisplayEntity.BillboardMode.CENTER);
             textDisplay.addCommandTag(MARKER_TAG);
             textDisplay.addCommandTag(LABEL_TAG);
-            textDisplay.addCommandTag("compressy.pos." + pos.getX() + "_" + pos.getY() + "_" + pos.getZ());
+                textDisplay.addCommandTag("compressy.pos." + pos.getX() + "_" + pos.getY() + "_" + pos.getZ());
             
             world.spawnEntity(textDisplay);
         }
+        }
         
-        // 3. BLOCK_DISPLAY OVERLAY - darkening tint based on compression level
+        // 3. BLOCK_DISPLAY OVERLAY - darkening tint based on compression level (if enabled)
         // Scale LARGER (1.01x) so overlay is visible on top of the block
-        if (level > 1) {
+        if (level > 1 && com.compressy.config.CompressyConfig.get().showDarkeningOverlay) {
             var overlay = EntityType.BLOCK_DISPLAY.create(world, SpawnReason.COMMAND);
             if (overlay != null) {
                 // Scale factor - slightly larger so overlay is visible on block faces
@@ -385,14 +384,14 @@ public class CompressyBlockHandler {
         var customData = stack.get(DataComponentTypes.CUSTOM_DATA);
         if (customData == null) return 0;
         var nbt = customData.copyNbt();
-        return nbt.getInt("compressed_level").orElse(0);
+        return com.compressy.util.NbtHelper.getInt(nbt, "compressed_level", 0);
     }
     
     private static String getCompressedBlockId(ItemStack stack) {
         var customData = stack.get(DataComponentTypes.CUSTOM_DATA);
         if (customData == null) return "";
         var nbt = customData.copyNbt();
-        return nbt.getString("compressed_block").orElse("");
+        return com.compressy.util.NbtHelper.getString(nbt, "compressed_block", "");
     }
     
     private static String toRoman(int num) {

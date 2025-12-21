@@ -294,7 +294,7 @@ public class DecompressionRecipe extends SpecialCraftingRecipe {
             return 0;
         }
         var nbt = customData.copyNbt();
-        return nbt.getInt("compressed_level").orElse(0);
+        return com.compressy.util.NbtHelper.getInt(nbt, "compressed_level", 0);
     }
     
     /**
@@ -306,7 +306,7 @@ public class DecompressionRecipe extends SpecialCraftingRecipe {
             return "";
         }
         var nbt = customData.copyNbt();
-        return nbt.getString("compressed_block").orElse("");
+        return com.compressy.util.NbtHelper.getString(nbt, "compressed_block", "");
     }
     
     /**

@@ -17,13 +17,16 @@
   "entrypoints": {
     "main": [
       "com.compressy.CompressyMod"
+    ],
+    "modmenu": [
+      "com.compressy.config.CompressyModMenuIntegration"
     ]
   },
   "depends": {
-    "fabricloader": ">=0.18.2",
+    "fabricloader": ">=0.16.0",
     "fabric-api": "*",
     "fabric-command-api-v2": "*",
-    "minecraft": "~1.21.11",
+    "minecraft": "~${minecraft_version}",
     "java": ">=21"
   },
   "suggests": {
