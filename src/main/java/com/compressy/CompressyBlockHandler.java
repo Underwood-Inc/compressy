@@ -211,6 +211,7 @@ public class CompressyBlockHandler {
             marker.setInteractionWidth(0.98f);
             marker.setInteractionHeight(0.98f);
             marker.addCommandTag(MARKER_TAG);
+            marker.addCommandTag("compressy.pos." + pos.getX() + "_" + pos.getY() + "_" + pos.getZ());
             marker.addCommandTag("compressedblocks.level." + level);
             // Store data in custom name (hacky but works in datapack-compatible way)
             marker.setCustomName(Text.literal(level + ":" + blockId));
@@ -235,6 +236,7 @@ public class CompressyBlockHandler {
             textDisplay.setBillboardMode(DisplayEntity.BillboardMode.CENTER);
             textDisplay.addCommandTag(MARKER_TAG);
             textDisplay.addCommandTag(LABEL_TAG);
+            textDisplay.addCommandTag("compressy.pos." + pos.getX() + "_" + pos.getY() + "_" + pos.getZ());
             
             world.spawnEntity(textDisplay);
         }
@@ -278,6 +280,7 @@ public class CompressyBlockHandler {
                 
                 overlay.addCommandTag(MARKER_TAG);
                 overlay.addCommandTag(OVERLAY_TAG);
+                overlay.addCommandTag("compressy.pos." + pos.getX() + "_" + pos.getY() + "_" + pos.getZ());
                 
                 world.spawnEntity(overlay);
             }
@@ -305,14 +308,19 @@ public class CompressyBlockHandler {
      * Remove all compression-related entities at a position
      */
     private static void removeCompressionEntities(World world, BlockPos pos) {
-        Box searchBox = new Box(pos).expand(0.5);
+        // Use position tag for EXACT matching - no ambiguity with neighbors
+        String posTag = "compressy.pos." + pos.getX() + "_" + pos.getY() + "_" + pos.getZ();
+        
+        // Expand search to catch all nearby entities with our tags
+        Box searchBox = new Box(pos).expand(1.5);
         
         List<Entity> entities = world.getEntitiesByClass(
             Entity.class,
             searchBox,
-            e -> e.getCommandTags().contains(MARKER_TAG)
+            e -> e.getCommandTags().contains(posTag)
         );
         
+        // Remove all entities tagged with this exact position
         for (Entity entity : entities) {
             entity.discard();
         }
