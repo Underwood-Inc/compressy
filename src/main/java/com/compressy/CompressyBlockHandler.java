@@ -244,19 +244,20 @@ public class CompressyBlockHandler {
         }
         
         // 3. BLOCK_DISPLAY OVERLAY - darkening tint based on compression level
-        // Scale slightly larger (1.02x) and offset to wrap AROUND the block, avoiding z-fighting
+        // Scale SMALLER (0.98x) and center INSIDE the block to avoid overlap with neighbors
         if (level > 1) {
             var overlay = EntityType.BLOCK_DISPLAY.create(world, SpawnReason.COMMAND);
             if (overlay != null) {
-                // Scale factor - slightly larger to wrap around the real block
-                float scale = 1.02f;
-                // Offset to center the scaled block (-0.01 on each axis for 1.02 scale)
-                double offset = (scale - 1.0) / 2.0;
+                // Scale factor - slightly smaller to fit INSIDE the real block
+                // This prevents overlap artifacts when placing compressed blocks adjacent
+                float scale = 0.98f;
+                // Offset to center the scaled block (+0.01 on each axis for 0.98 scale)
+                double offset = (1.0 - scale) / 2.0;
                 
                 overlay.setPosition(
-                    pos.getX() - offset,
-                    pos.getY() - offset,
-                    pos.getZ() - offset
+                    pos.getX() + offset,
+                    pos.getY() + offset,
+                    pos.getZ() + offset
                 );
                 
                 // Use tinted glass - darker colors for higher levels
