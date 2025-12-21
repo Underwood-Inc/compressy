@@ -23,9 +23,25 @@ version = project.mod_version
 group = project.maven_group
 
 // Include MC version in archive name for multi-version builds
+// Format: compressy-1.21.11-v1.1.2.jar (v prefix distinguishes mod version from game version)
 def mcVersion = project.minecraft_version
+def modVersion = project.mod_version
+
 base {
-    archivesName = "${project.archives_base_name}-${mcVersion}"
+    archivesName = "${project.archives_base_name}-${mcVersion}-v${modVersion}"
+}
+
+// Disable version appending for all jars (we include version in archivesName)
+afterEvaluate {
+    tasks.withType(Jar).configureEach {
+        archiveVersion = ""
+    }
+    tasks.withType(net.fabricmc.loom.task.RemapJarTask).configureEach {
+        archiveVersion = ""
+    }
+    tasks.withType(net.fabricmc.loom.task.RemapSourcesJarTask).configureEach {
+        archiveVersion = ""
+    }
 }
 
 repositories {
@@ -95,44 +111,15 @@ jar {
     }
 }
 
-// LITE version JAR - no block placement, lighter weight
-task jarLite(type: Jar) {
-    description = 'Creates the LITE version JAR (no block placement)'
-    dependsOn classes
-    
-    archiveBaseName = "${project.archives_base_name}-${mcVersion}-lite"
-    archiveVersion = project.mod_version
-    archiveClassifier = ''
-    
-    // Handle duplicate files by using the first one found
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    
-    // Include compiled classes
-    from(sourceSets.main.output)
-    
-    // Include all resources EXCEPT fabric.mod.json (we'll add modified version)
-    from(sourceSets.main.resources.srcDirs) {
-        exclude 'fabric.mod.json'
-    }
-    
-    from("LICENSE") {
-        rename { "${it}_${project.base.archivesName.get()}-lite"}
-    }
-    
-    manifest {
-        attributes(
-            'Compressed-Blocks-Mode': 'lite',
-            'Implementation-Title': 'Compressy LITE',
-            'Implementation-Version': project.mod_version
-        )
-    }
-}
-
 // Generate modified fabric.mod.json for LITE version
 task generateLiteFabricMod {
+    def srcFile = file('src/main/resources/fabric.mod.json')
+    def destDir = file("${buildDir}/lite-resources")
+    
+    inputs.file(srcFile)
+    outputs.dir(destDir)
+    
     doLast {
-        def srcFile = file('src/main/resources/fabric.mod.json')
-        def destDir = file("${buildDir}/lite-resources")
         destDir.mkdirs()
         def destFile = new File(destDir, 'fabric.mod.json')
         
@@ -149,18 +136,61 @@ task generateLiteFabricMod {
     }
 }
 
-jarLite.dependsOn generateLiteFabricMod
-jarLite {
+// LITE version JAR (unremapped) - no block placement, lighter weight
+task jarLite(type: Jar) {
+    description = 'Creates the LITE version JAR (unremapped)'
+    dependsOn classes, generateLiteFabricMod
+    
+    archiveBaseName = "${project.archives_base_name}-${mcVersion}-lite-v${modVersion}"
+    archiveClassifier = 'dev'  // Mark as dev (unremapped)
+    
+    // Handle duplicate files by using the first one found
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    
+    // Include compiled classes
+    from(sourceSets.main.output)
+    
+    // Include all resources EXCEPT fabric.mod.json
+    from(sourceSets.main.resources.srcDirs) {
+        exclude 'fabric.mod.json'
+    }
+    
+    // Include modified fabric.mod.json for LITE
     from("${buildDir}/lite-resources") {
         include 'fabric.mod.json'
     }
+    
+    from("LICENSE") {
+        rename { "${it}_${project.base.archivesName.get()}-lite"}
+    }
+    
+    manifest {
+        attributes(
+            'Compressed-Blocks-Mode': 'lite',
+            'Implementation-Title': 'Compressy LITE',
+            'Implementation-Version': project.mod_version
+        )
+    }
 }
 
-// Add tasks to build - creates both FULL and LITE jars
-build.dependsOn jarLite
+// Remap the LITE JAR using Loom
+tasks.register('remapJarLite', net.fabricmc.loom.task.RemapJarTask) {
+    description = 'Remaps the LITE JAR for production use'
+    dependsOn jarLite
+    
+    inputFile = jarLite.archiveFile
+    archiveBaseName = "${project.archives_base_name}-${mcVersion}-lite-v${modVersion}"
+    archiveClassifier = ''  // No classifier for final remapped jar
+    
+    // Use the same remap settings as the main jar
+    addNestedDependencies = true
+}
+
+// Add remapped LITE jar to build
+build.dependsOn remapJarLite
 
 // Task to build all versions (use this for local development)
-task buildAllVersions {
+tasks.register('buildAllVersions') {
     description = 'Builds the mod for all supported Minecraft versions'
     group = 'build'
     
@@ -176,17 +206,26 @@ task buildAllVersions {
         println "Building for ${versionFiles.size()} Minecraft versions..."
         
         versionFiles.each { versionFile ->
-            def mcVer = versionFile.name.replace('.properties', '')
+            String mcVer = versionFile.name.replace('.properties', '')
             println "\n=========================================="
             println "Building for Minecraft ${mcVer}..."
             println "==========================================\n"
-            exec {
-                workingDir projectDir
-                if (System.getProperty('os.name').toLowerCase().contains('windows')) {
-                    commandLine 'cmd', '/c', 'gradlew.bat', 'clean', 'build', "-Pmc_version=${mcVer}", '--no-daemon'
-                } else {
-                    commandLine './gradlew', 'clean', 'build', "-Pmc_version=${mcVer}", '--no-daemon'
-                }
+            
+            def isWindows = System.getProperty('os.name').toLowerCase().contains('windows')
+            String[] cmd
+            if (isWindows) {
+                cmd = ['cmd', '/c', 'gradlew.bat', 'clean', 'build', "-Pmc_version=${mcVer}".toString(), '--no-daemon'] as String[]
+            } else {
+                cmd = ['./gradlew', 'clean', 'build', "-Pmc_version=${mcVer}".toString(), '--no-daemon'] as String[]
+            }
+            
+            def process = Runtime.getRuntime().exec(cmd, null, projectDir)
+            process.inputStream.eachLine { println it }
+            process.errorStream.eachLine { System.err.println it }
+            
+            def exitCode = process.waitFor()
+            if (exitCode != 0) {
+                throw new GradleException("Build failed for Minecraft ${mcVer}")
             }
         }
         
@@ -196,11 +235,11 @@ task buildAllVersions {
     }
 }
 
-// Make buildAllVersions the default when no mc_version specified and running 'buildAll'
-task buildAll {
+// Alias for buildAllVersions
+tasks.register('buildAll') {
     description = 'Alias for buildAllVersions'
     group = 'build'
-    dependsOn buildAllVersions
+    dependsOn 'buildAllVersions'
 }
 
 // Configure the maven publication

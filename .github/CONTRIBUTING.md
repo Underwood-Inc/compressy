@@ -72,31 +72,30 @@ Ready to code? Read on!
 
 ```
 compressy/
-├── data/                       # Datapack files
-│   ├── compressy/
-│   │   ├── function/          # Minecraft functions
-│   │   ├── advancement/       # Achievement system
-│   │   ├── recipe/           # Crafting recipes
-│   │   └── tags/             # Custom tags
-│   └── minecraft/
-│       └── tags/function/    # Load/tick hooks
-├── src/main/java/            # Fabric mod code
-│   └── com/compressy/
-├── src/main/resources/       # Mod resources
-├── scripts/                  # Build/release scripts
-├── .github/                  # GitHub templates & workflows
-└── build.gradle             # Build configuration
+├── src/main/java/com/compressy/    # Fabric mod code
+│   ├── CompressyMod.java           # Main mod entry
+│   ├── CompressyBlockHandler.java  # Placement & breaking (FULL)
+│   ├── CompressyBlockHandlerLite.java # Prevents placement (LITE)
+│   ├── recipe/                     # Custom crafting recipes
+│   ├── config/                     # ModMenu config integration
+│   └── util/                       # Utility classes
+├── src/main/resources/             # Mod resources
+│   └── fabric.mod.json             # Mod metadata
+├── versions/                       # Multi-version support
+│   └── 1.21.11.properties          # Current version config
+├── .github/                        # GitHub templates & workflows
+├── build.gradle                    # Build configuration
+└── gradle.properties               # Project properties
 ```
 
 ## 📦 Build Outputs
 
-The build produces three artifacts:
+The build produces two artifacts:
 
 | Artifact | Location | Description |
 |----------|----------|-------------|
-| FULL | `build/libs/compressy-{version}.jar` | Full mod with block placement |
-| LITE | `build/libs/compressy-lite-{version}.jar` | Inventory-only version |
-| Datapack | `build/datapacks/compressy-datapack-{version}.zip` | Standalone datapack |
+| FULL | `build/libs/compressy-1.21.11-v{version}.jar` | Full mod with block placement |
+| LITE | `build/libs/compressy-1.21.11-lite-v{version}.jar` | Inventory-only version |
 
 ## 💻 Coding Standards
 
@@ -107,15 +106,10 @@ The build produces three artifacts:
 - Keep methods focused on a single responsibility
 - Handle errors gracefully
 
-### Minecraft Functions (.mcfunction)
-- Use clear, descriptive function names
-- Add comments for complex logic
-- Keep functions focused and modular
-
 ### JSON Files
 - Use proper indentation (2 spaces)
 - Validate JSON syntax before committing
-- Follow Minecraft's data pack format specification
+- Follow Minecraft's specification for fabric.mod.json
 
 ## 🧪 Testing Guidelines
 
@@ -134,7 +128,6 @@ Before submitting a PR, test thoroughly:
 ### Version Testing
 - [ ] Test **FULL** version
 - [ ] Test **LITE** version
-- [ ] Test **standalone datapack** (if applicable)
 
 ### Performance Testing
 - Monitor for lag with many compressed blocks

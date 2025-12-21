@@ -3,10 +3,8 @@ package com.compressy.util;
 import net.minecraft.nbt.NbtCompound;
 
 /**
- * NBT helper for cross-version compatibility.
- * 
- * Handles the 1.21.11+ Optional-returning NBT API.
- * For older versions, this will need adjustments in a multi-version setup.
+ * NBT helper for Minecraft 1.21.11+
+ * Uses the Optional-returning NBT API.
  */
 public class NbtHelper {
     
@@ -18,7 +16,6 @@ public class NbtHelper {
             return defaultValue;
         }
         try {
-            // 1.21.11 API - getInt returns Optional<Integer>
             return nbt.getInt(key).orElse(defaultValue);
         } catch (Exception e) {
             return defaultValue;
@@ -33,7 +30,6 @@ public class NbtHelper {
             return defaultValue;
         }
         try {
-            // 1.21.11 API - getString returns Optional<String>
             return nbt.getString(key).orElse(defaultValue);
         } catch (Exception e) {
             return defaultValue;
@@ -48,7 +44,6 @@ public class NbtHelper {
             return defaultValue;
         }
         try {
-            // 1.21.11 API - getBoolean returns Optional<Boolean>
             return nbt.getBoolean(key).orElse(defaultValue);
         } catch (Exception e) {
             return defaultValue;
