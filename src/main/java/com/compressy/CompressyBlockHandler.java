@@ -5,6 +5,7 @@ import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.ShapeContext;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.Entity;
@@ -43,9 +44,9 @@ import java.util.List;
 public class CompressyBlockHandler {
     
     // Tags for our entities
-    public static final String MARKER_TAG = "compressedblocks.marker";
-    public static final String OVERLAY_TAG = "compressedblocks.overlay";
-    public static final String LABEL_TAG = "compressedblocks.label";
+    public static final String MARKER_TAG = "compressy.marker";
+    public static final String LABEL_TAG = "compressy.label";
+    public static final String OVERLAY_TAG = "compressy.overlay";
     
     /**
      * Register all event handlers
@@ -82,8 +83,19 @@ public class CompressyBlockHandler {
                     return ActionResult.FAIL;
                 }
                 
-                // PLACE THE REAL BLOCK!
+                // Only allow placing FULL CUBE blocks (no flowers, torches, etc.)
+                // These non-solid blocks cause issues with data preservation
                 BlockState state = block.getDefaultState();
+                if (!state.isFullCube(world, placePos)) {
+                    player.sendMessage(
+                        Text.literal("✗ Cannot place compressed non-solid blocks (flowers, torches, etc.)")
+                            .formatted(Formatting.RED),
+                        true
+                    );
+                    return ActionResult.FAIL;
+                }
+                
+                // PLACE THE REAL BLOCK!
                 world.setBlockState(placePos, state);
                 
                 // Now add our marker entities
@@ -231,21 +243,41 @@ public class CompressyBlockHandler {
             world.spawnEntity(textDisplay);
         }
         
-        // 3. BLOCK_DISPLAY OVERLAY - darkens the block based on level
-        // Uses black stained glass scaled to cover the block, with brightness reduced
+        // 3. BLOCK_DISPLAY OVERLAY - darkening tint based on compression level
+        // Scale slightly larger (1.02x) and offset to wrap AROUND the block, avoiding z-fighting
         if (level > 1) {
             var overlay = EntityType.BLOCK_DISPLAY.create(world, SpawnReason.COMMAND);
             if (overlay != null) {
-                overlay.setPosition(pos.getX(), pos.getY(), pos.getZ());
+                // Scale factor - slightly larger to wrap around the real block
+                float scale = 1.02f;
+                // Offset to center the scaled block (-0.01 on each axis for 1.02 scale)
+                double offset = (scale - 1.0) / 2.0;
                 
-                // Use tinted glass for darkening effect
-                // Higher levels = darker (black stained glass with lower brightness)
-                BlockState overlayState = Blocks.BLACK_STAINED_GLASS.getDefaultState();
+                overlay.setPosition(
+                    pos.getX() - offset,
+                    pos.getY() - offset,
+                    pos.getZ() - offset
+                );
+                
+                // Use tinted glass - darker colors for higher levels
+                BlockState overlayState = getOverlayBlock(level);
                 ((DisplayEntity.BlockDisplayEntity) overlay).setBlockState(overlayState);
                 
-                // The block_display will overlay the real block
-                // We set brightness lower for higher compression levels
-                int brightness = Math.max(2, 15 - (level / 2));
+                // Set transformation for scale
+                // The transformation is applied via the entity's properties
+                org.joml.Matrix4f transform = new org.joml.Matrix4f();
+                transform.scale(scale);
+                ((DisplayEntity.BlockDisplayEntity) overlay).setTransformation(
+                    new net.minecraft.util.math.AffineTransformation(
+                        new org.joml.Vector3f(0, 0, 0),  // translation
+                        null,  // left rotation
+                        new org.joml.Vector3f(scale, scale, scale),  // scale
+                        null   // right rotation
+                    )
+                );
+                
+                // Reduce brightness for darker effect at higher levels
+                int brightness = Math.max(0, 15 - (level / 3));
                 overlay.setBrightness(new net.minecraft.entity.decoration.Brightness(brightness, brightness));
                 
                 overlay.addCommandTag(MARKER_TAG);
@@ -253,6 +285,23 @@ public class CompressyBlockHandler {
                 
                 world.spawnEntity(overlay);
             }
+        }
+    }
+    
+    /**
+     * Get the overlay block based on compression level (progressively darker)
+     */
+    private static BlockState getOverlayBlock(int level) {
+        // Use progressively darker tinted glass
+        if (level <= 5) {
+            return Blocks.LIGHT_GRAY_STAINED_GLASS.getDefaultState();
+        } else if (level <= 10) {
+            return Blocks.GRAY_STAINED_GLASS.getDefaultState();
+        } else if (level <= 20) {
+            return Blocks.BLACK_STAINED_GLASS.getDefaultState();
+        } else {
+            // Very high levels - use tinted glass (even darker)
+            return Blocks.TINTED_GLASS.getDefaultState();
         }
     }
     
