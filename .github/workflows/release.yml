@@ -156,14 +156,16 @@ jobs:
       # Publishes 3 separate versions: FULL, LITE, and Datapack
       
       - name: Publish FULL version to Modrinth
-        if: ${{ secrets.MODRINTH_TOKEN != '' }}
+        if: ${{ env.MODRINTH_TOKEN != '' }}
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
         run: |
           CHANGELOG="${{ steps.changelog.outputs.text }}
 
           **FULL version** - Includes block placement support. Place compressed blocks in the world!"
           
           curl -X POST "https://api.modrinth.com/v2/version" \
-            -H "Authorization: ${{ secrets.MODRINTH_TOKEN }}" \
+            -H "Authorization: $MODRINTH_TOKEN" \
             -H "User-Agent: github-actions/compressy-ci" \
             -F "data={
               \"name\": \"compressy-fabric\",
@@ -179,14 +181,16 @@ jobs:
             -F "file=@build/libs/compressy-${{ steps.version.outputs.new_version }}.jar"
       
       - name: Publish LITE version to Modrinth
-        if: ${{ secrets.MODRINTH_TOKEN != '' }}
+        if: ${{ env.MODRINTH_TOKEN != '' }}
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
         run: |
           CHANGELOG="${{ steps.changelog.outputs.text }}
 
           **LITE version** - No compressed block placing supported. Perfect for servers and automation-focused gameplay with zero overhead!"
           
           curl -X POST "https://api.modrinth.com/v2/version" \
-            -H "Authorization: ${{ secrets.MODRINTH_TOKEN }}" \
+            -H "Authorization: $MODRINTH_TOKEN" \
             -H "User-Agent: github-actions/compressy-ci" \
             -F "data={
               \"name\": \"compressy-fabric-LITE\",
@@ -202,14 +206,16 @@ jobs:
             -F "file=@build/libs/compressy-lite-${{ steps.version.outputs.new_version }}.jar"
       
       - name: Publish Datapack to Modrinth
-        if: ${{ secrets.MODRINTH_TOKEN != '' }}
+        if: ${{ env.MODRINTH_TOKEN != '' }}
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
         run: |
           CHANGELOG="${{ steps.changelog.outputs.text }}
 
           **Standalone Datapack** - Works without Fabric! Just drop in your world's datapacks folder. Provides recipes only (no custom block placement or tooltips)."
           
           curl -X POST "https://api.modrinth.com/v2/version" \
-            -H "Authorization: ${{ secrets.MODRINTH_TOKEN }}" \
+            -H "Authorization: $MODRINTH_TOKEN" \
             -H "User-Agent: github-actions/compressy-ci" \
             -F "data={
               \"name\": \"compressy-datapack\",
