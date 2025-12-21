@@ -166,13 +166,13 @@ graph TB
         F --> H[Command Registration]
         G --> I[CompressionRecipe.java]
         G --> J[DecompressionRecipe.java]
-        H --> K[/cblocks commands]
+        H --> K[cblocks commands]
     end
     
     subgraph "Recipe Processing"
         D --> L[Check all slots same]
         L --> M[Check is block item]
-        M --> N[Check level < 32]
+        M --> N[Check level under 32]
         N --> O[Create compressed output]
         
         E --> P[Check single compressed item]
