@@ -1,0 +1,21 @@
+{
+  "name": "compressy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Build scripts for Compressy Minecraft mod",
+  "scripts": {
+    "changeset": "echo 'Create a changeset file manually in .changeset/ folder'",
+    "check-changesets": "node scripts/check-changesets.js",
+    "bump": "node scripts/bump-version.js",
+    "bump:patch": "node scripts/bump-version.js patch",
+    "bump:minor": "node scripts/bump-version.js minor",
+    "bump:major": "node scripts/bump-version.js major"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Underwood-Inc/compressy.git"
+  },
+  "author": "strixun",
+  "license": "MIT"
+}
+

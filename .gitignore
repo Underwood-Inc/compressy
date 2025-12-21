@@ -30,6 +30,9 @@ desktop.ini
 local.properties
 *.local
 
+# Node
+node_modules/
+
 # Compiled
 *.class
 *.jar

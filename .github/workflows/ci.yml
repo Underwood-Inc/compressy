@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [master]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+      
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+      
+      - name: Check for changesets
+        id: changesets
+        run: node scripts/check-changesets.js
+      
+      - name: Build with Gradle
+        run: ./gradlew build --no-daemon
+      
+      - name: Changeset reminder
+        if: steps.changesets.outputs.has_changesets == 'false'
+        run: |
+          echo "::warning::No changeset found! Consider adding one with 'npx changeset' if this PR includes user-facing changes."
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            build/libs/*.jar
+            build/distributions/*.zip
+          retention-days: 7
+      
+      - name: Summary
+        run: |
+          echo "## ✅ Build Successful!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Changeset Detected:** ${{ steps.changesets.outputs.has_changesets }}" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.changesets.outputs.has_changesets }}" == "true" ]; then
+            echo "**Bump Type:** ${{ steps.changesets.outputs.bump_type }}" >> $GITHUB_STEP_SUMMARY
+          fi
+

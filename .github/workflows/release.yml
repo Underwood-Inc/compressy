@@ -1,0 +1,140 @@
+name: Build & Release
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      force_bump:
+        description: 'Force version bump type (overrides changeset)'
+        required: false
+        default: ''
+        type: choice
+        options:
+          - ''
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+      
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+      
+      - name: Check for changesets
+        id: changesets
+        run: node scripts/check-changesets.js
+      
+      - name: Determine bump type
+        id: bump_type
+        run: |
+          if [ -n "${{ github.event.inputs.force_bump }}" ]; then
+            echo "type=${{ github.event.inputs.force_bump }}" >> $GITHUB_OUTPUT
+            echo "Using forced bump type: ${{ github.event.inputs.force_bump }}"
+          else
+            echo "type=${{ steps.changesets.outputs.bump_type }}" >> $GITHUB_OUTPUT
+            echo "Using changeset bump type: ${{ steps.changesets.outputs.bump_type }}"
+          fi
+      
+      - name: Bump version
+        id: version
+        run: node scripts/bump-version.js ${{ steps.bump_type.outputs.type }}
+      
+      - name: Build with Gradle
+        run: ./gradlew build --no-daemon
+      
+      - name: Consume changesets
+        if: steps.changesets.outputs.has_changesets == 'true'
+        run: |
+          IFS=',' read -ra FILES <<< "${{ steps.changesets.outputs.changeset_files }}"
+          node scripts/consume-changesets.js "${FILES[@]}"
+      
+      - name: Generate changelog
+        id: changelog
+        run: |
+          if [ "${{ steps.changesets.outputs.has_changesets }}" == "true" ]; then
+            CHANGELOG="${{ steps.changesets.outputs.changelog }}"
+          else
+            CHANGELOG="Automatic patch release (build #${{ github.run_number }})"
+          fi
+          
+          # Create release notes
+          cat << EOF > RELEASE_NOTES.md
+          ## Compressy v${{ steps.version.outputs.new_version }}
+          
+          ### Changes
+          ${CHANGELOG}
+          
+          ### Downloads
+          - \`compressy-${{ steps.version.outputs.new_version }}.jar\` - Full version with block placement
+          - \`compressy-lite-${{ steps.version.outputs.new_version }}.jar\` - LITE version (inventory only)
+          - \`compressy-datapack-${{ steps.version.outputs.new_version }}.zip\` - Standalone datapack
+          
+          ### Installation
+          1. Install [Fabric Loader](https://fabricmc.net/) (0.18.2+)
+          2. Install [Fabric API](https://modrinth.com/mod/fabric-api)
+          3. Drop the JAR into your \`mods\` folder
+          EOF
+          
+          echo "Generated release notes"
+      
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add gradle.properties .changeset/
+          git diff --staged --quiet || git commit -m "chore(release): v${{ steps.version.outputs.new_version }} [skip ci]"
+          git push
+      
+      - name: Create Git tag
+        run: |
+          git tag "v${{ steps.version.outputs.new_version }}"
+          git push origin "v${{ steps.version.outputs.new_version }}"
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.version.outputs.new_version }}
+          name: Compressy v${{ steps.version.outputs.new_version }}
+          body_path: RELEASE_NOTES.md
+          draft: false
+          prerelease: false
+          files: |
+            build/libs/compressy-${{ steps.version.outputs.new_version }}.jar
+            build/libs/compressy-lite-${{ steps.version.outputs.new_version }}.jar
+            build/distributions/compressy-datapack-${{ steps.version.outputs.new_version }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Summary
+        run: |
+          echo "## 🎉 Release Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** v${{ steps.version.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Bump Type:** ${{ steps.bump_type.outputs.type }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Changesets Used:** ${{ steps.changesets.outputs.has_changesets }}" >> $GITHUB_STEP_SUMMARY
+
