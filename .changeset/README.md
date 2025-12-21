@@ -9,12 +9,18 @@ This folder contains changeset files for version management.
 When you make changes that should be included in the changelog:
 
 ```bash
-npx changeset
+pnpm changeset
 ```
 
-This will prompt you to:
-1. Select the type of change (patch/minor/major)
-2. Write a summary of the change
+Or manually create a markdown file in this folder:
+
+```markdown
+---
+"compressy": patch
+---
+
+Your change description here
+```
 
 ### Changeset types
 

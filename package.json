@@ -4,7 +4,7 @@
   "private": true,
   "description": "Build scripts for Compressy Minecraft mod",
   "scripts": {
-    "changeset": "echo 'Create a changeset file manually in .changeset/ folder'",
+    "changeset": "changeset",
     "check-changesets": "node scripts/check-changesets.js",
     "bump": "node scripts/bump-version.js",
     "bump:patch": "node scripts/bump-version.js patch",
@@ -16,6 +16,10 @@
     "url": "git+https://github.com/Underwood-Inc/compressy.git"
   },
   "author": "strixun",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@changesets/cli": "^2.27.0"
+  },
+  "packageManager": "pnpm@9.15.1"
 }
 
