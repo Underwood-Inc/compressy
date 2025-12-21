@@ -1,13 +1,13 @@
 # ========================================
 # Give Compressed Block (Macro Function)
 # ========================================
-# Uses macros to dynamically create compressed blocks
+# Uses macros to dynamically create Compressy
 # Arguments: block_id, clear_count
 
 # Clear the source blocks
 $clear @s $(block_id) $(clear_count)
 
-# Calculate how many compressed blocks to give
+# Calculate how many Compressy to give
 $execute store result score #give_count cb.temp run clear @s $(block_id) 0
 
 # Give the compressed block with dynamic NBT
@@ -18,5 +18,5 @@ $give @s $(block_id)[custom_name='{"text":"Compressed $(block_id)","color":"aqua
 playsound minecraft:block.amethyst_block.chime master @s ~ ~ ~ 1 1.5
 particle minecraft:happy_villager ~ ~1 ~ 0.5 0.5 0.5 0 10
 
-tellraw @s [{"text":"[Compressed Blocks] ","color":"gold"},{"text":"Compressed blocks to Level 1!","color":"green"}]
+tellraw @s [{"text":"[Compressy] ","color":"gold"},{"text":"Compressy to Level 1!","color":"green"}]
 

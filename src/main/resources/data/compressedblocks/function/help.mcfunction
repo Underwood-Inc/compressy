@@ -1,11 +1,11 @@
 # ========================================
-# Compressed Blocks - Help
+# Compressy - Help
 # ========================================
 # Displays help information for players
 
 tellraw @s [{"text":""}]
 tellraw @s [{"text":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","color":"gold"}]
-tellraw @s [{"text":"  📦 ","color":"yellow"},{"text":"Compressed Blocks","color":"white","bold":true},{"text":" - Help","color":"gray"}]
+tellraw @s [{"text":"  📦 ","color":"yellow"},{"text":"Compressy","color":"white","bold":true},{"text":" - Help","color":"gray"}]
 tellraw @s [{"text":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","color":"gold"}]
 tellraw @s [{"text":""}]
 tellraw @s [{"text":"How to Use (Wand Method - Recommended):","color":"yellow","bold":true}]

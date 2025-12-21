@@ -10,7 +10,7 @@ execute store result storage compressedblocks:temp new_level int 1 run scoreboar
 # Calculate block count string for new level
 function compressedblocks:compressor/calculate_block_count
 
-# Get count of compressed blocks
+# Get count of Compressy
 execute store result score #count cb.temp run data get entity @s Inventory[{Slot:-106b}].count
 
 # Calculate give count (current count * 9)
@@ -29,5 +29,5 @@ $give @s $(block_id)[custom_name='{"text":"Compressed Block [Lv.$(new_level)]","
 playsound minecraft:block.amethyst_block.break master @s ~ ~ ~ 1 0.8
 particle minecraft:poof ~ ~1 ~ 0.3 0.3 0.3 0.05 10
 
-$tellraw @s [{"text":"[Compressed Blocks] ","color":"gold"},{"text":"Decompressed to $(give_count)x Level $(new_level)!","color":"green"}]
+$tellraw @s [{"text":"[Compressy] ","color":"gold"},{"text":"Decompressed to $(give_count)x Level $(new_level)!","color":"green"}]
 

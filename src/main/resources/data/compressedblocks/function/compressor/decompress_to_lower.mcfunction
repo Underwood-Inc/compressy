@@ -1,7 +1,7 @@
 # ========================================
 # Decompress to Lower Level (Level N -> 9x Level N-1)
 # ========================================
-# Returns 9 compressed blocks of one level lower
+# Returns 9 Compressy of one level lower
 
 # Calculate new level
 scoreboard players remove #level cb.temp 1
@@ -10,7 +10,7 @@ execute store result storage compressedblocks:temp new_level int 1 run scoreboar
 # Calculate the block count string for the new level
 function compressedblocks:compressor/calculate_block_count
 
-# Clear one of the current compressed blocks
+# Clear one of the current Compressy
 # This is tricky because we need to match the specific level
 # We'll use the current level in storage
 execute store result storage compressedblocks:temp current_level int 1 run scoreboard players add #level cb.temp 1
@@ -28,5 +28,5 @@ $give @s $(block_id)[custom_name='{"text":"Compressed $(block_id) [Lv.$(new_leve
 playsound minecraft:block.amethyst_block.break master @s ~ ~ ~ 1 0.8
 particle minecraft:poof ~ ~1 ~ 0.3 0.3 0.3 0.05 10
 
-$tellraw @s [{"text":"[Compressed Blocks] ","color":"gold"},{"text":"Decompressed to 9x Level $(new_level)!","color":"green"}]
+$tellraw @s [{"text":"[Compressy] ","color":"gold"},{"text":"Decompressed to 9x Level $(new_level)!","color":"green"}]
 

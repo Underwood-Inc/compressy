@@ -4,7 +4,7 @@
 # Shows debug information for administrators
 
 tellraw @s [{"text":""}]
-tellraw @s [{"text":"=== Compressed Blocks Debug ===","color":"gold","bold":true}]
+tellraw @s [{"text":"=== Compressy Debug ===","color":"gold","bold":true}]
 tellraw @s [{"text":""}]
 tellraw @s [{"text":"Mod Version: ","color":"gray"},{"text":"1.0.0","color":"white"}]
 tellraw @s [{"text":"Max Compression: ","color":"gray"},{"text":"32 levels","color":"aqua"}]

@@ -16,5 +16,5 @@ scoreboard players reset * cb.temp
 # Reinitialize
 function compressedblocks:load
 
-tellraw @a [{"text":"[Compressed Blocks] ","color":"gold","bold":true},{"text":"⚠ All compressed block displays removed!","color":"red"}]
+tellraw @a [{"text":"[Compressy] ","color":"gold","bold":true},{"text":"⚠ All compressed block displays removed!","color":"red"}]
 

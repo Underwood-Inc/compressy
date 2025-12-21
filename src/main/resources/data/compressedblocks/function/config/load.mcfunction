@@ -1,5 +1,5 @@
 # ========================================
-# Compressed Blocks - Config Load
+# Compressy - Config Load
 # ========================================
 # Initialize configuration in data storage
 

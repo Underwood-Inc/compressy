@@ -1,4 +1,4 @@
-# Compressed Blocks - Setup Notes
+# Compressy - Setup Notes
 
 ## Before Building
 

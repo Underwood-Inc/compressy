@@ -1,7 +1,7 @@
 # ========================================
 # Update All Compressed Block Displays
 # ========================================
-# Updates visual indicators on placed compressed blocks
+# Updates visual indicators on placed Compressy
 # Only runs when compressed block displays exist
 
 # Update text displays to pulse/glow effect

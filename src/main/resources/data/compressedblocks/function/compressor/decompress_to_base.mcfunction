@@ -13,5 +13,5 @@ $give @s $(block_id) 9
 playsound minecraft:block.amethyst_block.break master @s ~ ~ ~ 1 0.8
 particle minecraft:poof ~ ~1 ~ 0.3 0.3 0.3 0.05 10
 
-tellraw @s [{"text":"[Compressed Blocks] ","color":"gold"},{"text":"Decompressed to 9 blocks!","color":"green"}]
+tellraw @s [{"text":"[Compressy] ","color":"gold"},{"text":"Decompressed to 9 blocks!","color":"green"}]
 

@@ -1,4 +1,4 @@
-# 📦 Compressed Blocks
+# 📦 Compressy
 
 > **Squish ALL your blocks into tiny packages!**
 
@@ -128,11 +128,11 @@ A: Nope! Regular players can use all the main commands!
 ### As a Mod (Recommended)
 1. Install [Fabric Loader](https://fabricmc.net/)
 2. Install [Fabric API](https://modrinth.com/mod/fabric-api)
-3. Drop `compressed-blocks-1.0.0.jar` in your `mods` folder
+3. Drop `compressy-1.0.0.jar` in your `mods` folder
 4. Play!
 
 ### As a Datapack
-1. Download `compressed-blocks-datapack-1.0.0.zip`
+1. Download `compressy-datapack-1.0.0.zip`
 2. Put it in your world's `datapacks` folder
 3. Run `/reload`
 4. Play! *(Some features limited without mod)*
@@ -199,7 +199,7 @@ graph TB
 ```mermaid
 graph LR
     subgraph "Mod Structure"
-        A[compressed-blocks/]
+        A[compressy/]
         A --> B[src/main/java/]
         A --> C[data/]
         A --> D[gradle files]
@@ -353,7 +353,7 @@ classDiagram
 
 ---
 
-## Placed Compressed Blocks (Data Preservation)
+## Placed Compressy (Data Preservation)
 
 When you place a compressed block in the world, we need to preserve all the compression data without losing potentially **millions of blocks**! Here's how we do it:
 
@@ -383,7 +383,7 @@ graph TD
 3. **TEXT_DISPLAY** - Shows the compression tier (Roman numeral) above block
 4. **OVERLAY block_display** - Semi-transparent dark overlay for visual darkening
 
-### Breaking Compressed Blocks
+### Breaking Compressy
 
 ```mermaid
 sequenceDiagram
@@ -482,7 +482,7 @@ if (block != Blocks.AIR) {
 ## File Structure
 
 ```
-compressed-blocks/
+compressy/
 ├── 📄 build.gradle              # Build configuration
 ├── 📄 settings.gradle           # Gradle settings
 ├── 📄 gradle.properties         # Version config
@@ -603,8 +603,8 @@ We provide **two versions** of the mod:
 
 | Variant | File | Features |
 |---------|------|----------|
-| **FULL** | `compressed-blocks-1.0.0.jar` | Place compressed blocks in world with visual overlays |
-| **LITE** | `compressed-blocks-lite-1.0.0.jar` | Inventory-only, no placement (lighter weight) |
+| **FULL** | `compressy-1.0.0.jar` | Place compressed blocks in world with visual overlays |
+| **LITE** | `compressy-lite-1.0.0.jar` | Inventory-only, no placement (lighter weight) |
 
 ### Why Choose LITE?
 
@@ -629,16 +629,16 @@ graph LR
 
 ```bash
 # Clone the repo
-git clone https://github.com/Underwood-Inc/compressed-blocks.git
-cd compressed-blocks
+git clone https://github.com/Underwood-Inc/compressy.git
+cd compressy
 
 # Build everything (creates BOTH variants)
 ./gradlew build
 
 # Outputs:
-# - build/libs/compressed-blocks-1.0.0.jar (FULL version)
-# - build/libs/compressed-blocks-lite-1.0.0.jar (LITE version)
-# - build/datapacks/compressed-blocks-datapack-1.0.0.zip (Standalone)
+# - build/libs/compressy-1.0.0.jar (FULL version)
+# - build/libs/compressy-lite-1.0.0.jar (LITE version)
+# - build/datapacks/compressy-datapack-1.0.0.zip (Standalone)
 ```
 
 ### Runtime Mode Switch

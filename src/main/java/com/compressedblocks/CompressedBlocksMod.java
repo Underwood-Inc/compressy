@@ -25,7 +25,7 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 
 /**
- * Compressed Blocks - Compress ANY block up to 32 times!
+ * Compressy - Compress ANY block up to 32 times!
  * 
  * A Minecraft mod that allows compressing blocks into super-dense variants.
  * Uses Minecraft's block tags for automatic support - no giant config needed!
@@ -91,9 +91,9 @@ public class CompressedBlocksMod implements ModInitializer {
     public void onInitialize() {
         LOGGER.info("===========================================");
         if (LITE_MODE) {
-            LOGGER.info("  Compressed Blocks LITE - No Placement!  ");
+            LOGGER.info("  Compressy LITE - No Placement!  ");
         } else {
-            LOGGER.info("  Compressed Blocks FULL - Infinite Storage!  ");
+            LOGGER.info("  Compressy FULL - Infinite Storage!  ");
         }
         LOGGER.info("===========================================");
         LOGGER.info("Mod loaded successfully! Mode: " + (LITE_MODE ? "LITE" : "FULL"));
@@ -199,7 +199,7 @@ public class CompressedBlocksMod implements ModInitializer {
         source.sendFeedback(() -> Text.literal(""), false);
         source.sendFeedback(() -> Text.literal("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
                 .formatted(Formatting.GOLD), false);
-        source.sendFeedback(() -> Text.literal("  📦 Compressed Blocks - Help")
+        source.sendFeedback(() -> Text.literal("  📦 Compressy - Help")
                 .formatted(Formatting.GOLD).formatted(Formatting.BOLD), false);
         source.sendFeedback(() -> Text.literal("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
                 .formatted(Formatting.GOLD), false);
@@ -280,7 +280,7 @@ public class CompressedBlocksMod implements ModInitializer {
             // Give directly to player - NO PERMISSION REQUIRED!
             player.giveItemStack(compressor);
             
-            source.sendFeedback(() -> Text.literal("[Compressed Blocks] ")
+            source.sendFeedback(() -> Text.literal("[Compressy] ")
                     .formatted(Formatting.GOLD).formatted(Formatting.BOLD)
                     .append(Text.literal("Gave Compressor block!").formatted(Formatting.GREEN)), false);
             
@@ -299,7 +299,7 @@ public class CompressedBlocksMod implements ModInitializer {
             var heldItem = player.getMainHandStack();
             
             if (heldItem.isEmpty()) {
-                source.sendFeedback(() -> Text.literal("[Compressed Blocks] ")
+                source.sendFeedback(() -> Text.literal("[Compressy] ")
                         .formatted(Formatting.GOLD)
                         .append(Text.literal("Hold a compressed block to see info!").formatted(Formatting.YELLOW)), false);
                 return Command.SINGLE_SUCCESS;
@@ -308,7 +308,7 @@ public class CompressedBlocksMod implements ModInitializer {
             // Check if it's a compressed block by looking for custom data
             var customData = heldItem.get(net.minecraft.component.DataComponentTypes.CUSTOM_DATA);
             if (customData == null) {
-                source.sendFeedback(() -> Text.literal("[Compressed Blocks] ")
+                source.sendFeedback(() -> Text.literal("[Compressy] ")
                         .formatted(Formatting.GOLD)
                         .append(Text.literal("This is not a compressed block.").formatted(Formatting.YELLOW)), false);
                 return Command.SINGLE_SUCCESS;
@@ -316,7 +316,7 @@ public class CompressedBlocksMod implements ModInitializer {
             
             var nbt = customData.copyNbt();
             if (!nbt.contains("compressed_level")) {
-                source.sendFeedback(() -> Text.literal("[Compressed Blocks] ")
+                source.sendFeedback(() -> Text.literal("[Compressy] ")
                         .formatted(Formatting.GOLD)
                         .append(Text.literal("This is not a compressed block.").formatted(Formatting.YELLOW)), false);
                 return Command.SINGLE_SUCCESS;
@@ -351,7 +351,7 @@ public class CompressedBlocksMod implements ModInitializer {
 
     private int decompress(CommandContext<ServerCommandSource> ctx, int amount) {
         ServerCommandSource source = ctx.getSource();
-        source.sendFeedback(() -> Text.literal("[Compressed Blocks] ")
+        source.sendFeedback(() -> Text.literal("[Compressy] ")
                 .formatted(Formatting.GOLD)
                 .append(Text.literal("Use Shift+Right-click on a Compressor to decompress!")
                         .formatted(Formatting.YELLOW)), false);
@@ -360,7 +360,7 @@ public class CompressedBlocksMod implements ModInitializer {
 
     private int showDebug(CommandContext<ServerCommandSource> ctx) {
         ServerCommandSource source = ctx.getSource();
-        source.sendFeedback(() -> Text.literal("=== Compressed Blocks Debug ===")
+        source.sendFeedback(() -> Text.literal("=== Compressy Debug ===")
                 .formatted(Formatting.GOLD).formatted(Formatting.BOLD), false);
         source.sendFeedback(() -> Text.literal("Mod Version: 1.0.0").formatted(Formatting.GRAY), false);
         source.sendFeedback(() -> Text.literal("Status: Running").formatted(Formatting.GREEN), false);
@@ -370,7 +370,7 @@ public class CompressedBlocksMod implements ModInitializer {
 
     private int reloadConfig(CommandContext<ServerCommandSource> ctx) {
         ServerCommandSource source = ctx.getSource();
-        source.sendFeedback(() -> Text.literal("[Compressed Blocks] ")
+        source.sendFeedback(() -> Text.literal("[Compressy] ")
                 .formatted(Formatting.GOLD).formatted(Formatting.BOLD)
                 .append(Text.literal("✓ Config reloaded!").formatted(Formatting.GREEN)), false);
         return Command.SINGLE_SUCCESS;
@@ -409,7 +409,7 @@ public class CompressedBlocksMod implements ModInitializer {
             // Give directly to player - NO PERMISSION REQUIRED!
             player.giveItemStack(wand);
             
-            source.sendFeedback(() -> Text.literal("[Compressed Blocks] ")
+            source.sendFeedback(() -> Text.literal("[Compressy] ")
                     .formatted(Formatting.GOLD).formatted(Formatting.BOLD)
                     .append(Text.literal("Gave Compression Wand!").formatted(Formatting.GREEN)), false);
             
@@ -424,7 +424,7 @@ public class CompressedBlocksMod implements ModInitializer {
     private int giveAll(CommandContext<ServerCommandSource> ctx) {
         giveCompressor(ctx);
         giveWand(ctx);
-        ctx.getSource().sendFeedback(() -> Text.literal("[Compressed Blocks] ")
+        ctx.getSource().sendFeedback(() -> Text.literal("[Compressy] ")
                 .formatted(Formatting.GOLD).formatted(Formatting.BOLD)
                 .append(Text.literal("Gave all items!").formatted(Formatting.GREEN)), false);
         return Command.SINGLE_SUCCESS;

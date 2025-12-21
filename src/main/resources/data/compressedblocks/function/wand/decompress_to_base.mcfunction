@@ -3,7 +3,7 @@
 # ========================================
 # Arguments: block_id
 
-# Get count of compressed blocks
+# Get count of Compressy
 execute store result score #count cb.temp run data get entity @s Inventory[{Slot:-106b}].count
 
 # Calculate total blocks to give (count * 9)
@@ -22,5 +22,5 @@ $give @s $(block_id) $(give_count)
 playsound minecraft:block.amethyst_block.break master @s ~ ~ ~ 1 0.8
 particle minecraft:poof ~ ~1 ~ 0.3 0.3 0.3 0.05 10
 
-$tellraw @s [{"text":"[Compressed Blocks] ","color":"gold"},{"text":"Decompressed to $(give_count) blocks!","color":"green"}]
+$tellraw @s [{"text":"[Compressy] ","color":"gold"},{"text":"Decompressed to $(give_count) blocks!","color":"green"}]
 

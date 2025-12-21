@@ -1,5 +1,5 @@
 # ========================================
-# Compressed Blocks - Load Function
+# Compressy - Load Function
 # ========================================
 # This function runs once when the datapack is loaded
 # Supports compression up to 32 levels (9^32 blocks!)
@@ -25,7 +25,7 @@ function compressedblocks:config/load
 # Display load message
 tellraw @a [{"text":""}]
 tellraw @a [{"text":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","color":"gold"}]
-tellraw @a [{"text":"│","color":"gold"},{"text":"          📦 ","color":"yellow"},{"text":"Compressed Blocks","color":"white","bold":true}]
+tellraw @a [{"text":"│","color":"gold"},{"text":"          📦 ","color":"yellow"},{"text":"Compressy","color":"white","bold":true}]
 tellraw @a [{"text":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","color":"gold"}]
 tellraw @a [{"text":"│","color":"gold"}]
 tellraw @a [{"text":"│","color":"gold"},{"text":"  Compress ANY block up to ","color":"gray"},{"text":"32 times!","color":"aqua","bold":true}]

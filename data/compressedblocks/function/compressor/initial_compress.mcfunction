@@ -1,7 +1,7 @@
 # ========================================
 # Initial Compression (Level 0 -> Level 1)
 # ========================================
-# Compresses regular blocks into level 1 compressed blocks
+# Compresses regular blocks into level 1 Compressy
 
 # Store the block ID for the compressed block
 data modify storage compressedblocks:temp block_id set from entity @s SelectedItem.id
@@ -23,7 +23,7 @@ scoreboard players operation #used cb.temp *= #9 cb.data
 scoreboard players operation #remainder cb.temp -= #used cb.temp
 
 # Can't compress if we don't have enough
-execute unless score #compress_count cb.temp matches 1.. run return run tellraw @s [{"text":"[Compressed Blocks] ","color":"gold"},{"text":"Need at least 9 blocks to compress!","color":"red"}]
+execute unless score #compress_count cb.temp matches 1.. run return run tellraw @s [{"text":"[Compressy] ","color":"gold"},{"text":"Need at least 9 blocks to compress!","color":"red"}]
 
 # Remove the used blocks from inventory
 execute store result storage compressedblocks:temp clear_count int 1 run scoreboard players get #used cb.temp

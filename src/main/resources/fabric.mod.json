@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "id": "compressedblocks",
   "version": "${version}",
-  "name": "Compressed Blocks",
+  "name": "Compressy",
   "description": "Compress ANY block up to 32 times! Uses Minecraft's block tags for automatic support. No giant config files needed!",
   "authors": [
     "strixun"
   ],
   "contact": {
-    "homepage": "https://github.com/Underwood-Inc/compressed-blocks",
-    "issues": "https://github.com/Underwood-Inc/compressed-blocks/issues"
+    "homepage": "https://github.com/Underwood-Inc/compressy",
+    "issues": "https://github.com/Underwood-Inc/compressy/issues"
   },
   "license": "MIT",
   "icon": "icon.png",
@@ -33,7 +33,7 @@
     "modmenu": {
       "links": {
         "modmenu.discord": "https://discord.gg/mpThbx67J7",
-        "modmenu.issues": "https://github.com/Underwood-Inc/compressed-blocks/issues"
+        "modmenu.issues": "https://github.com/Underwood-Inc/compressy/issues"
       },
       "update_checker": true
     }

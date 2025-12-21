@@ -1,19 +1,19 @@
 # ========================================
 # Re-Compression (Level N -> Level N+1)
 # ========================================
-# Compresses already-compressed blocks to higher levels
+# Compresses already-Compressy to higher levels
 
 # Get current compression level
 execute store result score #current_level cb.temp run data get entity @s SelectedItem.components."minecraft:custom_data".compressed_level
 
 # Check if already at max level (32)
-execute if score #current_level cb.temp matches 32.. run return run tellraw @s [{"text":"[Compressed Blocks] ","color":"gold"},{"text":"Already at maximum compression (Level 32)!","color":"red"}]
+execute if score #current_level cb.temp matches 32.. run return run tellraw @s [{"text":"[Compressy] ","color":"gold"},{"text":"Already at maximum compression (Level 32)!","color":"red"}]
 
 # Get current count
 execute store result score #count cb.temp run data get entity @s SelectedItem.count
 
 # Need at least 9 to compress
-execute unless score #count cb.temp matches 9.. run return run tellraw @s [{"text":"[Compressed Blocks] ","color":"gold"},{"text":"Need at least 9 compressed blocks to compress further!","color":"red"}]
+execute unless score #count cb.temp matches 9.. run return run tellraw @s [{"text":"[Compressy] ","color":"gold"},{"text":"Need at least 9 Compressy to compress further!","color":"red"}]
 
 # Store data for the new compressed block
 data modify storage compressedblocks:temp block_id set from entity @s SelectedItem.components."minecraft:custom_data".compressed_block

@@ -3,8 +3,8 @@
 # ========================================
 # Decompresses blocks in offhand
 
-# Check if offhand has compressed blocks
-execute unless data entity @s Inventory[{Slot:-106b}].components."minecraft:custom_data".compressed_level run return run tellraw @s [{"text":"[Compressed Blocks] ","color":"gold"},{"text":"Put compressed blocks in offhand to decompress!","color":"yellow"}]
+# Check if offhand has Compressy
+execute unless data entity @s Inventory[{Slot:-106b}].components."minecraft:custom_data".compressed_level run return run tellraw @s [{"text":"[Compressy] ","color":"gold"},{"text":"Put Compressy in offhand to decompress!","color":"yellow"}]
 
 # Get current level
 execute store result score #level cb.temp run data get entity @s Inventory[{Slot:-106b}].components."minecraft:custom_data".compressed_level

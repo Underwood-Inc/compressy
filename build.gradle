@@ -99,7 +99,7 @@ task jarLite(type: Jar) {
     manifest {
         attributes(
             'Compressed-Blocks-Mode': 'lite',
-            'Implementation-Title': 'Compressed Blocks LITE',
+            'Implementation-Title': 'Compressy LITE',
             'Implementation-Version': project.mod_version
         )
     }
@@ -114,7 +114,7 @@ task generateLiteFabricMod {
         def destFile = new File(destDir, 'fabric.mod.json')
         
         def content = srcFile.text
-        content = content.replace('"name": "Compressed Blocks"', '"name": "Compressed Blocks LITE"')
+        content = content.replace('"name": "Compressy"', '"name": "Compressy LITE"')
         content = content.replace(
             '"description": "Compress ANY block up to 32 times',
             '"description": "[LITE] Compress ANY block up to 32 times (no world placement)'

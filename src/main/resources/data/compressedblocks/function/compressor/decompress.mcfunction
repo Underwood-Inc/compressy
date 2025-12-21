@@ -5,7 +5,7 @@
 # Shift+right-click on compressor with compressed block
 
 # Check if holding a compressed block
-execute unless data entity @s SelectedItem.components."minecraft:custom_data".compressed_level run return run tellraw @s [{"text":"[Compressed Blocks] ","color":"gold"},{"text":"Hold a compressed block to decompress!","color":"yellow"}]
+execute unless data entity @s SelectedItem.components."minecraft:custom_data".compressed_level run return run tellraw @s [{"text":"[Compressy] ","color":"gold"},{"text":"Hold a compressed block to decompress!","color":"yellow"}]
 
 # Get current level
 execute store result score #level cb.temp run data get entity @s SelectedItem.components."minecraft:custom_data".compressed_level

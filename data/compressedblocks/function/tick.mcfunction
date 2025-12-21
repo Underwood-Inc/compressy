@@ -1,5 +1,5 @@
 # ========================================
-# Compressed Blocks - Tick Function
+# Compressy - Tick Function
 # ========================================
 # Runs every tick - OPTIMIZED for minimal performance impact
 # Only processes when necessary using scoreboards and tags
@@ -8,7 +8,7 @@
 execute as @a[scores={cb.use_carrot=1..}] at @s run function compressedblocks:compressor/check_interaction
 execute as @a run scoreboard players set @s cb.use_carrot 0
 
-# Process placed compressed blocks (visual updates)
+# Process placed Compressy (visual updates)
 # Only runs if there are any compressed block displays
 execute if entity @e[type=block_display,tag=cb.compressed_display,limit=1] run function compressedblocks:display/update_all
 
