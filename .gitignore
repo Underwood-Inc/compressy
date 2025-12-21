@@ -1,0 +1,42 @@
+# Gradle
+.gradle/
+build/
+out/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.sublime-*
+.project
+.classpath
+.settings/
+
+# Eclipse
+bin/
+
+# Fabric Loom
+run/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local config
+local.properties
+*.local
+
+# Compiled
+*.class
+*.jar
+*.war
+
+# Minecraft
+logs/
+crash-reports/
+saves/
+
