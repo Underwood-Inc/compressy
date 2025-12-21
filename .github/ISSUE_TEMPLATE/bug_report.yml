@@ -1,0 +1,162 @@
+name: Bug Report
+description: Report a bug or issue with the Compressy mod/datapack
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Thanks for reporting a bug!
+        Please fill out this form to help us fix the issue. The more details you provide, the faster we can resolve it.
+
+  - type: dropdown
+    id: installation-type
+    attributes:
+      label: Installation Type
+      description: Which version of Compressy are you using?
+      options:
+        - Fabric Mod (FULL version)
+        - Fabric Mod (LITE version)
+        - Standalone Datapack
+        - Not sure
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Compressy Version
+      description: What version of Compressy are you using?
+      placeholder: "e.g., 1.0.0"
+    validations:
+      required: true
+
+  - type: input
+    id: minecraft-version
+    attributes:
+      label: Minecraft Version
+      description: What version of Minecraft are you running?
+      placeholder: "e.g., 1.21.11"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Bug Category
+      description: What aspect of the mod is affected?
+      options:
+        - Compression (crafting 9 into 1)
+        - Decompression (crafting 1 into 9)
+        - Block Placement (FULL version)
+        - Block Breaking
+        - Tooltips/Visual Display
+        - Commands (/cblocks)
+        - Compression Wand
+        - Recipe Generation
+        - Performance/Lag
+        - Inventory Issues
+        - Compatibility with Other Mods
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is
+      placeholder: "When I try to compress Cobblestone to level 5..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce this issue?
+      placeholder: |
+        1. Get a stack of Cobblestone
+        2. Craft into Compressed Cobblestone (9x)
+        3. Repeat until level 5
+        4. Try to place the block
+        5. Observe that...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What should happen?
+      placeholder: "The compressed block should place in the world..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happens?
+      placeholder: "Instead, nothing happens and the block stays in my hand..."
+    validations:
+      required: true
+
+  - type: input
+    id: compression-level
+    attributes:
+      label: Compression Level (if applicable)
+      description: What compression level was the affected block?
+      placeholder: "e.g., Level 3 (729 blocks)"
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error Messages / Logs
+      description: Any error messages in chat or console? Paste relevant logs here
+      placeholder: "Paste any error messages, chat output, or relevant log excerpts..."
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: other-mods
+    attributes:
+      label: Other Mods/Datapacks
+      description: List any other mods or datapacks you're using (conflicts may occur)
+      placeholder: |
+        - Fabric API 0.100.0+1.21.11
+        - Applied Energistics 2
+        - Create
+        - Other mod XYZ
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots / Videos
+      description: If applicable, add screenshots or videos to help explain the problem
+      placeholder: "Drag and drop images here, or paste links to screenshots/videos"
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched existing issues to make sure this hasn't been reported yet
+          required: true
+        - label: I have tried reloading the game to see if that fixes the issue
+          required: true
+        - label: I am using a compatible Minecraft version (1.21+)
+          required: true
+        - label: I have Fabric API installed (for mod versions)
+          required: true
+        - label: I have included all relevant information above
+          required: true
+

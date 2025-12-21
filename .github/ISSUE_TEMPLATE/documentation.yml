@@ -1,0 +1,100 @@
+name: Documentation Issue
+description: Report missing, incorrect, or unclear documentation
+title: "[Docs]: "
+labels: ["documentation", "needs-review"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Documentation Feedback
+        Help us improve the Compressy documentation!
+
+  - type: dropdown
+    id: doc-type
+    attributes:
+      label: Documentation Type
+      description: What kind of documentation issue is this?
+      options:
+        - README.md (main)
+        - Installation Guide
+        - Modrinth Page
+        - Command Reference
+        - In-game Tooltips
+        - GitHub Wiki
+        - Code Comments
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: issue-type
+    attributes:
+      label: Issue Type
+      description: What's wrong with the documentation?
+      options:
+        - Missing Information
+        - Incorrect/Outdated Information
+        - Unclear/Confusing Explanation
+        - Broken Links
+        - Missing Examples
+        - Typo/Grammar
+        - Formatting Issue
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: location
+    attributes:
+      label: Document Location
+      description: Which file or section needs improvement?
+      placeholder: "e.g., README.md > Installation section OR Modrinth description"
+    validations:
+      required: true
+
+  - type: textarea
+    id: current-content
+    attributes:
+      label: Current Content
+      description: Quote the current documentation content (if applicable)
+      placeholder: "Currently it says: '...'"
+    validations:
+      required: false
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Description
+      description: What's unclear or wrong? Why is this confusing?
+      placeholder: "This is confusing because... / This information is outdated since..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggested-improvement
+    attributes:
+      label: Suggested Improvement
+      description: How should this be documented instead?
+      placeholder: "It should say: '...' OR Add a section explaining..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Any other helpful information
+      placeholder: "Screenshots, links to related docs, examples of better documentation..."
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission Checklist
+      options:
+        - label: I have checked that this documentation issue doesn't already have an open issue
+          required: true
+        - label: I have verified this is actually an issue with the documentation (not a bug in the mod itself)
+          required: true
+

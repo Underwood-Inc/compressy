@@ -1,0 +1,15 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 🎮 Twitch Stream
+    url: https://www.twitch.tv/strixun
+    about: Watch live development and ask questions in real-time!
+  - name: 📚 Documentation
+    url: https://github.com/Underwood-Inc/compressy/blob/master/README.md
+    about: Check the full documentation before opening an issue
+  - name: 💬 Discord Community
+    url: https://discord.gg/mpThbx67J7
+    about: Join our Discord for questions, discussions, and community support
+  - name: 🌐 Modrinth Page
+    url: https://modrinth.com/datapack/compressy
+    about: Download the latest version and read the description
+

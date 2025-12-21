@@ -2,7 +2,7 @@ name: CI
 
 on:
   pull_request:
-    branches: [master]
+    branches: [master, main]
 
 jobs:
   validate:
@@ -28,6 +28,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '21'
+          cache: 'gradle'
       
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
@@ -52,7 +53,6 @@ jobs:
           name: build-artifacts
           path: |
             build/libs/*.jar
-            build/distributions/*.zip
           retention-days: 7
       
       - name: Summary
@@ -63,4 +63,3 @@ jobs:
           if [ "${{ steps.changesets.outputs.has_changesets }}" == "true" ]; then
             echo "**Bump Type:** ${{ steps.changesets.outputs.bump_type }}" >> $GITHUB_STEP_SUMMARY
           fi
-

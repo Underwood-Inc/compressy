@@ -35,8 +35,11 @@ node_modules/
 
 # Compiled
 *.class
-*.jar
 *.war
+
+# JARs (but keep gradle wrapper)
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
 
 # Minecraft
 logs/

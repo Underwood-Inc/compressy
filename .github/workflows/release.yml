@@ -2,7 +2,7 @@ name: Build & Release
 
 on:
   push:
-    branches: [master]
+    branches: [master, main]
   workflow_dispatch:
     inputs:
       force_bump:
@@ -47,6 +47,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '21'
+          cache: 'gradle'
       
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
@@ -89,24 +90,37 @@ jobs:
           else
             CHANGELOG="Automatic patch release (build #${{ github.run_number }})"
           fi
+          echo "text=$CHANGELOG" >> $GITHUB_OUTPUT
           
           # Create release notes
-          cat << EOF > RELEASE_NOTES.md
+          cat << 'EOF' > RELEASE_NOTES.md
           ## Compressy v${{ steps.version.outputs.new_version }}
           
           ### Changes
-          ${CHANGELOG}
+          $CHANGELOG
           
           ### Downloads
-          - \`compressy-${{ steps.version.outputs.new_version }}.jar\` - Full version with block placement
-          - \`compressy-lite-${{ steps.version.outputs.new_version }}.jar\` - LITE version (inventory only)
-          - \`compressy-datapack-${{ steps.version.outputs.new_version }}.zip\` - Standalone datapack
+          
+          | File | Description |
+          |------|-------------|
+          | `compressy-${{ steps.version.outputs.new_version }}.jar` | **FULL** - Fabric mod with block placement support |
+          | `compressy-lite-${{ steps.version.outputs.new_version }}.jar` | **LITE** - Fabric mod, inventory-only (no block placement) |
+          | `compressy-datapack-${{ steps.version.outputs.new_version }}.zip` | **Datapack** - Standalone, no Fabric required |
           
           ### Installation
+          
+          **Fabric Mod (FULL or LITE):**
           1. Install [Fabric Loader](https://fabricmc.net/) (0.18.2+)
           2. Install [Fabric API](https://modrinth.com/mod/fabric-api)
-          3. Drop the JAR into your \`mods\` folder
+          3. Drop the JAR into your `mods` folder
+          
+          **Datapack:**
+          1. Drop the ZIP into your world's `datapacks` folder
+          2. Run `/reload` or restart the world
           EOF
+          
+          # Replace variable in file
+          sed -i "s|\$CHANGELOG|${CHANGELOG}|g" RELEASE_NOTES.md
           
           echo "Generated release notes"
       
@@ -124,7 +138,7 @@ jobs:
           git push origin "v${{ steps.version.outputs.new_version }}"
       
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.new_version }}
           name: Compressy v${{ steps.version.outputs.new_version }}
@@ -134,9 +148,81 @@ jobs:
           files: |
             build/libs/compressy-${{ steps.version.outputs.new_version }}.jar
             build/libs/compressy-lite-${{ steps.version.outputs.new_version }}.jar
-            build/distributions/compressy-datapack-${{ steps.version.outputs.new_version }}.zip
+            build/datapacks/compressy-datapack-${{ steps.version.outputs.new_version }}.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      # Modrinth Publishing (only if MODRINTH_TOKEN is set)
+      # Publishes 3 separate versions: FULL, LITE, and Datapack
+      
+      - name: Publish FULL version to Modrinth
+        if: ${{ secrets.MODRINTH_TOKEN != '' }}
+        run: |
+          CHANGELOG="${{ steps.changelog.outputs.text }}
+
+          **FULL version** - Includes block placement support. Place compressed blocks in the world!"
+          
+          curl -X POST "https://api.modrinth.com/v2/version" \
+            -H "Authorization: ${{ secrets.MODRINTH_TOKEN }}" \
+            -H "User-Agent: github-actions/compressy-ci" \
+            -F "data={
+              \"name\": \"compressy-fabric\",
+              \"version_number\": \"${{ steps.version.outputs.new_version }}\",
+              \"changelog\": $(echo "$CHANGELOG" | jq -Rs .),
+              \"dependencies\": [{\"project_id\": \"P7dR8mSH\", \"dependency_type\": \"required\"}],
+              \"game_versions\": [\"1.21.11\"],
+              \"version_type\": \"release\",
+              \"loaders\": [\"fabric\"],
+              \"featured\": true,
+              \"project_id\": \"compressy\"
+            }" \
+            -F "file=@build/libs/compressy-${{ steps.version.outputs.new_version }}.jar"
+      
+      - name: Publish LITE version to Modrinth
+        if: ${{ secrets.MODRINTH_TOKEN != '' }}
+        run: |
+          CHANGELOG="${{ steps.changelog.outputs.text }}
+
+          **LITE version** - No compressed block placing supported. Perfect for servers and automation-focused gameplay with zero overhead!"
+          
+          curl -X POST "https://api.modrinth.com/v2/version" \
+            -H "Authorization: ${{ secrets.MODRINTH_TOKEN }}" \
+            -H "User-Agent: github-actions/compressy-ci" \
+            -F "data={
+              \"name\": \"compressy-fabric-LITE\",
+              \"version_number\": \"${{ steps.version.outputs.new_version }}\",
+              \"changelog\": $(echo "$CHANGELOG" | jq -Rs .),
+              \"dependencies\": [{\"project_id\": \"P7dR8mSH\", \"dependency_type\": \"required\"}],
+              \"game_versions\": [\"1.21.11\"],
+              \"version_type\": \"release\",
+              \"loaders\": [\"fabric\"],
+              \"featured\": true,
+              \"project_id\": \"compressy\"
+            }" \
+            -F "file=@build/libs/compressy-lite-${{ steps.version.outputs.new_version }}.jar"
+      
+      - name: Publish Datapack to Modrinth
+        if: ${{ secrets.MODRINTH_TOKEN != '' }}
+        run: |
+          CHANGELOG="${{ steps.changelog.outputs.text }}
+
+          **Standalone Datapack** - Works without Fabric! Just drop in your world's datapacks folder. Provides recipes only (no custom block placement or tooltips)."
+          
+          curl -X POST "https://api.modrinth.com/v2/version" \
+            -H "Authorization: ${{ secrets.MODRINTH_TOKEN }}" \
+            -H "User-Agent: github-actions/compressy-ci" \
+            -F "data={
+              \"name\": \"compressy-datapack\",
+              \"version_number\": \"${{ steps.version.outputs.new_version }}\",
+              \"changelog\": $(echo "$CHANGELOG" | jq -Rs .),
+              \"dependencies\": [],
+              \"game_versions\": [\"1.21.11\"],
+              \"version_type\": \"release\",
+              \"loaders\": [\"datapack\"],
+              \"featured\": true,
+              \"project_id\": \"compressy\"
+            }" \
+            -F "file=@build/datapacks/compressy-datapack-${{ steps.version.outputs.new_version }}.zip"
       
       - name: Summary
         run: |
@@ -145,4 +231,3 @@ jobs:
           echo "**Version:** v${{ steps.version.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
           echo "**Bump Type:** ${{ steps.bump_type.outputs.type }}" >> $GITHUB_STEP_SUMMARY
           echo "**Changesets Used:** ${{ steps.changesets.outputs.has_changesets }}" >> $GITHUB_STEP_SUMMARY
-

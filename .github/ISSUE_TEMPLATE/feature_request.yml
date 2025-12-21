@@ -1,0 +1,117 @@
+name: Feature Request
+description: Suggest a new feature or improvement for Compressy
+title: "[Feature]: "
+labels: ["enhancement", "needs-review"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Thanks for suggesting a feature!
+        We love hearing ideas from the community. Please provide as much detail as possible.
+
+  - type: dropdown
+    id: feature-type
+    attributes:
+      label: Feature Type
+      description: What kind of feature are you suggesting?
+      options:
+        - New Compression Feature
+        - Quality of Life Improvement
+        - Performance Optimization
+        - Visual/UI Enhancement
+        - Tooltip Improvement
+        - Command Enhancement
+        - Automation Support
+        - Mod Compatibility
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Feature Description
+      description: A clear and concise description of the feature you'd like to see
+      placeholder: "I would like to see a feature that..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem It Solves
+      description: What problem does this feature solve? Or what experience does it enhance?
+      placeholder: "Currently, there's no way to... / It would be more convenient if..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed Solution
+      description: How would you implement this feature? Be as detailed as you like!
+      placeholder: |
+        For example:
+        - Add a config option to set max compression level
+        - Show total block count in tooltip
+        - Add keybind for quick compression
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternative Solutions
+      description: Have you considered any alternative approaches?
+      placeholder: "Another way to achieve this could be..."
+    validations:
+      required: false
+
+  - type: dropdown
+    id: version-scope
+    attributes:
+      label: Applies To
+      description: Which version(s) should this feature apply to?
+      options:
+        - Both FULL and LITE versions
+        - FULL version only
+        - LITE version only
+        - Datapack only
+        - Not sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: complexity
+    attributes:
+      label: Estimated Complexity
+      description: How complex do you think this feature is?
+      options:
+        - Simple - Minor tweak
+        - Medium - Requires some work
+        - Complex - Major undertaking
+        - Not sure
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Any other context, mockups, examples from other mods?
+      placeholder: "Similar to how [other mod] does it... / Here's a mockup image..."
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched existing issues and feature requests to avoid duplicates
+          required: true
+        - label: This feature would benefit the community, not just my specific use case
+          required: true
+
