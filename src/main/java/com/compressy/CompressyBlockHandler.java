@@ -1,19 +1,18 @@
 package com.compressy;
 
+import java.util.List;
+
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.ShapeContext;
-import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.decoration.DisplayEntity;
 import net.minecraft.entity.decoration.InteractionEntity;
-import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -24,10 +23,7 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
-
-import java.util.List;
 
 /**
  * Handles compressed block placement and breaking.
@@ -244,14 +240,13 @@ public class CompressyBlockHandler {
         }
         
         // 3. BLOCK_DISPLAY OVERLAY - darkening tint based on compression level
-        // Scale SMALLER (0.98x) and center INSIDE the block to avoid overlap with neighbors
+        // Scale LARGER (1.01x) so overlay is visible on top of the block
         if (level > 1) {
             var overlay = EntityType.BLOCK_DISPLAY.create(world, SpawnReason.COMMAND);
             if (overlay != null) {
-                // Scale factor - slightly smaller to fit INSIDE the real block
-                // This prevents overlap artifacts when placing compressed blocks adjacent
-                float scale = 0.98f;
-                // Offset to center the scaled block (+0.01 on each axis for 0.98 scale)
+                // Scale factor - slightly larger so overlay is visible on block faces
+                float scale = 1.01f;
+                // Offset to center the scaled block (-0.005 on each axis for 1.01 scale)
                 double offset = (1.0 - scale) / 2.0;
                 
                 overlay.setPosition(
