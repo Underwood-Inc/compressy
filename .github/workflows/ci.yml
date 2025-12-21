@@ -19,8 +19,6 @@ jobs:
       
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
       
       - name: Install dependencies
         run: pnpm install --frozen-lockfile || pnpm install
@@ -44,7 +42,7 @@ jobs:
       - name: Changeset reminder
         if: steps.changesets.outputs.has_changesets == 'false'
         run: |
-          echo "::warning::No changeset found! Consider adding one with 'npx changeset' if this PR includes user-facing changes."
+          echo "::warning::No changeset found! Consider adding one with 'pnpm changeset' if this PR includes user-facing changes."
       
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
