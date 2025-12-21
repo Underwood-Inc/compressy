@@ -1,3 +1,5 @@
+> See the [Getting Started Guide](../README.md)
+
 # .github Directory
 
 This directory contains GitHub-specific configuration files, templates, and workflows for the Compressy project.
