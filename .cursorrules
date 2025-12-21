@@ -1,0 +1,43 @@
+# Cursor AI Rules for Compressy
+
+## Git Operations - CRITICAL
+
+1. **NEVER automatically commit or push files** without explicit user permission
+2. **NEVER run `git commit` or `git push`** commands unless the user explicitly says to do so
+3. When a task is FULLY COMPLETE, ask: "Ready to commit? Here's what changed: [list files]"
+4. Wait for user confirmation before executing any git commands
+5. If the user says "commit" or "push", confirm the commit message first
+
+## Build Operations
+
+1. **NEVER run build commands** (`gradlew build`, `pnpm build`, etc.) unless:
+   - User explicitly requests it
+   - User has granted permission to do so
+2. When suggesting a build, ask first: "Want me to run the build to verify?"
+
+## CI/CD Workflows
+
+1. When creating or modifying GitHub Actions workflows:
+   - Verify syntax is valid YAML
+   - Check that referenced files exist (like `gradlew`)
+   - Consider Linux vs Windows differences (file permissions, path separators)
+   - Test scripts locally if possible before suggesting commits
+
+## General Rules
+
+1. Read and understand files before making changes
+2. Don't make assumptions - ask for clarification
+3. When fixing errors, understand the root cause first
+4. Don't create fallback code unless explicitly requested
+5. Use conventional commits syntax for commit messages
+6. Use pnpm, not npm or npx
+
+## Task Completion Flow
+
+1. Make the required changes
+2. Verify changes are correct (lint, type check if applicable)
+3. List all modified files
+4. ASK: "Task complete. Ready to commit these changes?"
+5. Wait for user confirmation
+6. Only then execute git commands
+

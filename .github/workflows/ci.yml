@@ -37,7 +37,9 @@ jobs:
         run: node scripts/check-changesets.js
       
       - name: Build with Gradle
-        run: ./gradlew build --no-daemon
+        run: |
+          chmod +x ./gradlew
+          ./gradlew build --no-daemon
       
       - name: Changeset reminder
         if: steps.changesets.outputs.has_changesets == 'false'

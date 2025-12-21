@@ -71,7 +71,9 @@ jobs:
         run: node scripts/bump-version.js ${{ steps.bump_type.outputs.type }}
       
       - name: Build with Gradle
-        run: ./gradlew build --no-daemon
+        run: |
+          chmod +x ./gradlew
+          ./gradlew build --no-daemon
       
       - name: Consume changesets
         if: steps.changesets.outputs.has_changesets == 'true'
