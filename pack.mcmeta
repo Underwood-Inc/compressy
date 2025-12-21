@@ -1,0 +1,10 @@
+{
+  "pack": {
+    "description": "§6Compressy§r - Compress ANY block up to 32x (9^32 blocks!)",
+    "supported_formats": {
+      "min_inclusive": 88,
+      "max_inclusive": 95
+    }
+  }
+}
+

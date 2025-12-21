@@ -1,0 +1,431 @@
+package com.compressedblocks;
+
+import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.SpawnReason;
+import net.minecraft.entity.decoration.DisplayEntity;
+import net.minecraft.entity.decoration.InteractionEntity;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.text.Text;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Formatting;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
+
+import java.util.List;
+
+/**
+ * Handles compressed block placement and breaking.
+ * 
+ * APPROACH (like totem-rituals):
+ * 1. Place the ACTUAL BLOCK (full collision, redstone, piston behavior, etc.)
+ * 2. Summon an INTERACTION entity at the block to store compression data
+ * 3. Add a TEXT_DISPLAY above for Roman numeral tier
+ * 4. Add a BLOCK_DISPLAY overlay (tinted glass) for darkening effect
+ * 5. On block break, intercept and drop the compressed item instead
+ * 
+ * This preserves all vanilla block behavior while storing compression data!
+ */
+public class CompressedBlockHandler {
+    
+    // Tags for our entities
+    public static final String MARKER_TAG = "compressedblocks.marker";
+    public static final String OVERLAY_TAG = "compressedblocks.overlay";
+    public static final String LABEL_TAG = "compressedblocks.label";
+    
+    /**
+     * Register all event handlers
+     */
+    public static void register() {
+        // Intercept block placement for compressed items
+        UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
+            ItemStack heldItem = player.getStackInHand(hand);
+            
+            // Check if it's a compressed block
+            int level = getCompressionLevel(heldItem);
+            if (level <= 0) {
+                return ActionResult.PASS; // Not compressed, let vanilla handle it
+            }
+            
+            // It's a compressed block!
+            if (!world.isClient() && world instanceof ServerWorld serverWorld) {
+                // Calculate placement position
+                BlockPos placePos = hitResult.getBlockPos().offset(hitResult.getSide());
+                
+                // Check if space is available
+                if (!world.getBlockState(placePos).isAir()) {
+                    return ActionResult.FAIL;
+                }
+                
+                // Get the block to place
+                String blockId = getCompressedBlockId(heldItem);
+                if (blockId.isEmpty()) {
+                    blockId = net.minecraft.registry.Registries.ITEM.getId(heldItem.getItem()).toString();
+                }
+                
+                Block block = net.minecraft.registry.Registries.BLOCK.get(Identifier.of(blockId));
+                if (block == Blocks.AIR) {
+                    return ActionResult.FAIL;
+                }
+                
+                // PLACE THE REAL BLOCK!
+                BlockState state = block.getDefaultState();
+                world.setBlockState(placePos, state);
+                
+                // Now add our marker entities
+                createCompressionMarker(serverWorld, placePos, blockId, level);
+                
+                // Consume the item (unless creative)
+                if (!player.isCreative()) {
+                    heldItem.decrement(1);
+                }
+                
+                // Play sound
+                world.playSound(null, placePos, 
+                    block.getDefaultState().getSoundGroup().getPlaceSound(),
+                    net.minecraft.sound.SoundCategory.BLOCKS, 1.0f, 0.8f);
+                
+                // Send feedback
+                player.sendMessage(
+                    Text.literal("Placed compressed " + formatBlockName(blockId) + " (Tier " + toRoman(level) + ")")
+                        .formatted(Formatting.GOLD), 
+                    true
+                );
+                
+                return ActionResult.SUCCESS;
+            }
+            
+            return ActionResult.PASS;
+        });
+        
+        // Intercept block breaking - BEFORE the block is broken
+        PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, blockEntity) -> {
+            if (world.isClient()) {
+                return true; // Continue breaking on client
+            }
+            
+            // Check if there's a compression marker at this position
+            List<InteractionEntity> markers = world.getEntitiesByClass(
+                InteractionEntity.class,
+                new Box(pos),
+                e -> e.getCommandTags().contains(MARKER_TAG)
+            );
+            
+            if (markers.isEmpty()) {
+                return true; // No marker, normal block break
+            }
+            
+            // Found a marker! This is a compressed block
+            InteractionEntity marker = markers.get(0);
+            
+            // Get compression data from marker's scoreboard or custom name
+            // We store it in the entity's custom name as a hack since interaction entities
+            // don't have proper NBT storage we can easily access
+            String customName = marker.getCustomName() != null ? marker.getCustomName().getString() : "";
+            int level = 1;
+            String blockId = net.minecraft.registry.Registries.BLOCK.getId(state.getBlock()).toString();
+            
+            // Parse from custom name format: "level:blockId"
+            if (customName.contains(":") && customName.matches("\\d+:.*")) {
+                String[] parts = customName.split(":", 2);
+                try {
+                    level = Integer.parseInt(parts[0]);
+                    blockId = parts[1];
+                } catch (NumberFormatException e) {
+                    // Use defaults
+                }
+            }
+            
+            // Create the compressed item to drop
+            ItemStack dropItem = createCompressedItem(blockId, level);
+            
+            // Remove the marker and related display entities
+            removeCompressionEntities(world, pos);
+            
+            // Remove the block without normal drops
+            world.removeBlock(pos, false);
+            
+            // Drop the compressed item
+            if (player instanceof ServerPlayerEntity serverPlayer) {
+                if (!serverPlayer.giveItemStack(dropItem)) {
+                    serverPlayer.dropItem(dropItem, false);
+                }
+                
+                serverPlayer.sendMessage(
+                    Text.literal("Retrieved compressed block (Tier " + toRoman(level) + ")")
+                        .formatted(Formatting.GREEN),
+                    true
+                );
+            } else {
+                // Drop at block position
+                net.minecraft.entity.ItemEntity itemEntity = new net.minecraft.entity.ItemEntity(
+                    world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, dropItem
+                );
+                world.spawnEntity(itemEntity);
+            }
+            
+            // Play sound
+            world.playSound(null, pos, state.getSoundGroup().getBreakSound(),
+                net.minecraft.sound.SoundCategory.BLOCKS, 1.0f, 1.0f);
+            
+            return false; // Cancel normal block break (we handled it)
+        });
+        
+        CompressedBlocksMod.LOGGER.info("Compressed block handler registered (ACTUAL BLOCKS + marker entities)");
+    }
+    
+    /**
+     * Create marker entities at a compressed block position
+     */
+    private static void createCompressionMarker(ServerWorld world, BlockPos pos, String blockId, int level) {
+        double x = pos.getX() + 0.5;
+        double y = pos.getY();
+        double z = pos.getZ() + 0.5;
+        
+        // 1. INTERACTION ENTITY - stores data, invisible, at block center
+        var marker = EntityType.INTERACTION.create(world, SpawnReason.COMMAND);
+        if (marker != null) {
+            marker.setPosition(x, y, z);
+            marker.setInteractionWidth(0.98f);
+            marker.setInteractionHeight(0.98f);
+            marker.addCommandTag(MARKER_TAG);
+            marker.addCommandTag("compressedblocks.level." + level);
+            // Store data in custom name (hacky but works in datapack-compatible way)
+            marker.setCustomName(Text.literal(level + ":" + blockId));
+            marker.setCustomNameVisible(false);
+            world.spawnEntity(marker);
+        }
+        
+        // 2. TEXT_DISPLAY - shows Roman numeral tier above the block
+        var textDisplay = EntityType.TEXT_DISPLAY.create(world, SpawnReason.COMMAND);
+        if (textDisplay != null) {
+            textDisplay.setPosition(x, y + 1.0, z);
+            
+            String roman = toRoman(level);
+            int color = getTierColor(level);
+            int bgColor = getContrastBackgroundColor(level);
+            
+            ((DisplayEntity.TextDisplayEntity) textDisplay).setText(
+                Text.literal(" " + roman + " ")
+                    .styled(s -> s.withColor(color).withBold(true))
+            );
+            
+            textDisplay.setBillboardMode(DisplayEntity.BillboardMode.CENTER);
+            textDisplay.addCommandTag(MARKER_TAG);
+            textDisplay.addCommandTag(LABEL_TAG);
+            
+            world.spawnEntity(textDisplay);
+        }
+        
+        // 3. BLOCK_DISPLAY OVERLAY - darkens the block based on level
+        // Uses black stained glass scaled to cover the block, with brightness reduced
+        if (level > 1) {
+            var overlay = EntityType.BLOCK_DISPLAY.create(world, SpawnReason.COMMAND);
+            if (overlay != null) {
+                overlay.setPosition(pos.getX(), pos.getY(), pos.getZ());
+                
+                // Use tinted glass for darkening effect
+                // Higher levels = darker (black stained glass with lower brightness)
+                BlockState overlayState = Blocks.BLACK_STAINED_GLASS.getDefaultState();
+                ((DisplayEntity.BlockDisplayEntity) overlay).setBlockState(overlayState);
+                
+                // The block_display will overlay the real block
+                // We set brightness lower for higher compression levels
+                int brightness = Math.max(2, 15 - (level / 2));
+                overlay.setBrightness(new net.minecraft.entity.decoration.Brightness(brightness, brightness));
+                
+                overlay.addCommandTag(MARKER_TAG);
+                overlay.addCommandTag(OVERLAY_TAG);
+                
+                world.spawnEntity(overlay);
+            }
+        }
+    }
+    
+    /**
+     * Remove all compression-related entities at a position
+     */
+    private static void removeCompressionEntities(World world, BlockPos pos) {
+        Box searchBox = new Box(pos).expand(0.5);
+        
+        List<Entity> entities = world.getEntitiesByClass(
+            Entity.class,
+            searchBox,
+            e -> e.getCommandTags().contains(MARKER_TAG)
+        );
+        
+        for (Entity entity : entities) {
+            entity.discard();
+        }
+    }
+    
+    /**
+     * Create a compressed item from stored data
+     */
+    private static ItemStack createCompressedItem(String blockId, int level) {
+        var item = net.minecraft.registry.Registries.ITEM.get(Identifier.of(blockId));
+        ItemStack stack = new ItemStack(item, 1);
+        
+        // Set the compression data
+        NbtCompound customData = new NbtCompound();
+        customData.putInt("compressed_level", level);
+        customData.putString("compressed_block", blockId);
+        stack.set(DataComponentTypes.CUSTOM_DATA, 
+            net.minecraft.component.type.NbtComponent.of(customData));
+        
+        // Set name
+        String roman = toRoman(level);
+        String displayName = formatBlockName(blockId);
+        int color = getTierColor(level);
+        
+        stack.set(DataComponentTypes.CUSTOM_NAME,
+            Text.literal(getTierSymbol(level) + " ")
+                .styled(s -> s.withColor(color).withItalic(false))
+                .append(Text.literal(displayName)
+                    .styled(s -> s.withColor(color).withItalic(false).withBold(true)))
+                .append(Text.literal(" " + roman)
+                    .styled(s -> s.withColor(getContrastColor(level)).withItalic(false).withBold(true))));
+        
+        // Set lore
+        String blockCount = calculateBlockCountString(level);
+        java.util.List<Text> lore = new java.util.ArrayList<>();
+        lore.add(Text.literal(getTierBar(level)).styled(s -> s.withColor(color).withItalic(false)));
+        lore.add(Text.empty());
+        lore.add(Text.literal("⬥ Tier: ").styled(s -> s.withColor(Formatting.GRAY).withItalic(false))
+            .append(Text.literal(roman).styled(s -> s.withColor(color).withBold(true).withItalic(false))));
+        lore.add(Text.literal("⬥ Contains: ").styled(s -> s.withColor(Formatting.GRAY).withItalic(false))
+            .append(Text.literal(blockCount + " blocks").styled(s -> s.withColor(Formatting.WHITE).withItalic(false))));
+        lore.add(Text.empty());
+        lore.add(Text.literal("▸ ").styled(s -> s.withColor(Formatting.DARK_GRAY).withItalic(false))
+            .append(Text.literal("3×3 craft to compress more").styled(s -> s.withColor(Formatting.GREEN).withItalic(false))));
+        lore.add(Text.literal("▸ ").styled(s -> s.withColor(Formatting.DARK_GRAY).withItalic(false))
+            .append(Text.literal("Craft alone to decompress").styled(s -> s.withColor(Formatting.AQUA).withItalic(false))));
+        
+        stack.set(DataComponentTypes.LORE, 
+            new net.minecraft.component.type.LoreComponent(lore));
+        
+        // Glint for high levels
+        if (level >= 5) {
+            stack.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
+        }
+        
+        return stack;
+    }
+    
+    // === Helper Methods ===
+    
+    private static int getCompressionLevel(ItemStack stack) {
+        var customData = stack.get(DataComponentTypes.CUSTOM_DATA);
+        if (customData == null) return 0;
+        var nbt = customData.copyNbt();
+        return nbt.getInt("compressed_level").orElse(0);
+    }
+    
+    private static String getCompressedBlockId(ItemStack stack) {
+        var customData = stack.get(DataComponentTypes.CUSTOM_DATA);
+        if (customData == null) return "";
+        var nbt = customData.copyNbt();
+        return nbt.getString("compressed_block").orElse("");
+    }
+    
+    private static String toRoman(int num) {
+        if (num <= 0 || num > 40) return String.valueOf(num);
+        String[] tens = {"", "X", "XX", "XXX", "XL"};
+        String[] ones = {"", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX"};
+        return tens[num / 10] + ones[num % 10];
+    }
+    
+    private static int getTierColor(int level) {
+        if (level <= 3) return 0x55FFFF;   // Aqua
+        if (level <= 6) return 0x55FF55;   // Green
+        if (level <= 10) return 0xFFFF55;  // Yellow
+        if (level <= 15) return 0xFFAA00;  // Orange
+        if (level <= 20) return 0xFF5555;  // Red
+        if (level <= 25) return 0xFF55FF;  // Pink
+        if (level <= 30) return 0xAA00AA;  // Purple
+        return 0xFFD700;                    // Gold
+    }
+    
+    private static int getContrastColor(int level) {
+        // For readability of Roman numerals on darker blocks
+        if (level <= 10) return 0x1A1A1A;   // Dark on light backgrounds
+        if (level <= 20) return 0xFFFFFF;   // White on medium
+        if (level <= 30) return 0xFFFF55;   // Yellow on dark
+        return 0x000000;                     // Black on gold
+    }
+    
+    private static int getContrastBackgroundColor(int level) {
+        // Background color for text display
+        if (level <= 10) return 0x40000000;  // Semi-transparent dark
+        if (level <= 20) return 0x40FFFFFF;  // Semi-transparent light
+        return 0x80000000;                    // More opaque dark
+    }
+    
+    private static String getTierSymbol(int level) {
+        if (level <= 3) return "◇";
+        if (level <= 6) return "◆";
+        if (level <= 10) return "★";
+        if (level <= 15) return "✦";
+        if (level <= 20) return "✧";
+        if (level <= 25) return "❖";
+        if (level <= 30) return "✴";
+        return "☆";
+    }
+    
+    private static String getTierBar(int level) {
+        int filled = Math.min(level, 32);
+        int segments = 16;
+        int filledSegments = (filled * segments) / 32;
+        int emptySegments = segments - filledSegments;
+        return "▓".repeat(filledSegments) + "░".repeat(emptySegments);
+    }
+    
+    private static String formatBlockName(String blockId) {
+        String name = blockId;
+        if (name.contains(":")) {
+            name = name.substring(name.indexOf(':') + 1);
+        }
+        String[] words = name.split("_");
+        StringBuilder result = new StringBuilder();
+        for (String word : words) {
+            if (!word.isEmpty()) {
+                result.append(Character.toUpperCase(word.charAt(0)))
+                      .append(word.substring(1))
+                      .append(" ");
+            }
+        }
+        return result.toString().trim();
+    }
+    
+    private static String calculateBlockCountString(int level) {
+        return switch (level) {
+            case 1 -> "9";
+            case 2 -> "81";
+            case 3 -> "729";
+            case 4 -> "6,561";
+            case 5 -> "59,049";
+            case 6 -> "531,441";
+            case 7 -> "4.78M";
+            case 8 -> "43M";
+            case 9 -> "387M";
+            case 10 -> "3.49B";
+            default -> level <= 15 ? "Trillions+" :
+                       level <= 20 ? "Quadrillions+" :
+                       "Astronomical";
+        };
+    }
+}

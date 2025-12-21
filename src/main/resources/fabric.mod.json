@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "compressedblocks",
+  "version": "${version}",
+  "name": "Compressed Blocks",
+  "description": "Compress ANY block up to 32 times! Uses Minecraft's block tags for automatic support. No giant config files needed!",
+  "authors": [
+    "strixun"
+  ],
+  "contact": {
+    "homepage": "https://github.com/Underwood-Inc/compressed-blocks",
+    "issues": "https://github.com/Underwood-Inc/compressed-blocks/issues"
+  },
+  "license": "MIT",
+  "icon": "icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.compressedblocks.CompressedBlocksMod"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.18.2",
+    "fabric-api": "*",
+    "fabric-command-api-v2": "*",
+    "minecraft": "~1.21.11",
+    "java": ">=21"
+  },
+  "suggests": {
+    "modmenu": "*"
+  },
+  "custom": {
+    "modmenu": {
+      "links": {
+        "modmenu.discord": "https://discord.gg/mpThbx67J7",
+        "modmenu.issues": "https://github.com/Underwood-Inc/compressed-blocks/issues"
+      },
+      "update_checker": true
+    }
+  }
+}
+

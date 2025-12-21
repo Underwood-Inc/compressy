@@ -1,0 +1,161 @@
+plugins {
+    id 'net.fabricmc.fabric-loom-remap' version "${loom_version}"
+    id 'maven-publish'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+repositories {
+    // Add repositories to retrieve artifacts from in here.
+}
+
+dependencies {
+    // To change the versions see the gradle.properties file
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    
+    // Fabric API for command registration
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+}
+
+// Task to sync datapack to mod resources before building
+task syncDatapack(type: Copy) {
+    description = 'Syncs datapack to mod resources folder'
+    from('data') {
+        into 'data'
+    }
+    into 'src/main/resources'
+}
+
+// Make sure syncDatapack runs before processing resources
+processResources.dependsOn syncDatapack
+
+processResources {
+    inputs.property "version", project.version
+
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
+    }
+    
+    // Ensure datapack pack.mcmeta is NOT overwritten by root one
+    exclude 'pack.mcmeta.datapack'
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 21
+}
+
+java {
+    withSourcesJar()
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+// Configure sourcesJar after it's created
+tasks.named('sourcesJar') {
+    dependsOn syncDatapack
+}
+
+jar {
+    from("LICENSE") {
+        rename { "${it}_${project.base.archivesName.get()}"}
+    }
+    // Default JAR is FULL version
+    manifest {
+        attributes 'Compressed-Blocks-Mode': 'full'
+    }
+}
+
+// LITE version JAR - no block placement, lighter weight
+task jarLite(type: Jar) {
+    description = 'Creates the LITE version JAR (no block placement)'
+    dependsOn classes
+    
+    archiveBaseName = "${project.archives_base_name}-lite"
+    archiveVersion = project.mod_version
+    archiveClassifier = ''
+    
+    // Handle duplicate files by using the first one found
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    
+    // Include compiled classes
+    from(sourceSets.main.output)
+    
+    // Include all resources EXCEPT fabric.mod.json (we'll add modified version)
+    from(sourceSets.main.resources.srcDirs) {
+        exclude 'fabric.mod.json'
+    }
+    
+    from("LICENSE") {
+        rename { "${it}_${project.base.archivesName.get()}-lite"}
+    }
+    
+    manifest {
+        attributes(
+            'Compressed-Blocks-Mode': 'lite',
+            'Implementation-Title': 'Compressed Blocks LITE',
+            'Implementation-Version': project.mod_version
+        )
+    }
+}
+
+// Generate modified fabric.mod.json for LITE version
+task generateLiteFabricMod {
+    doLast {
+        def srcFile = file('src/main/resources/fabric.mod.json')
+        def destDir = file("${buildDir}/lite-resources")
+        destDir.mkdirs()
+        def destFile = new File(destDir, 'fabric.mod.json')
+        
+        def content = srcFile.text
+        content = content.replace('"name": "Compressed Blocks"', '"name": "Compressed Blocks LITE"')
+        content = content.replace(
+            '"description": "Compress ANY block up to 32 times',
+            '"description": "[LITE] Compress ANY block up to 32 times (no world placement)'
+        )
+        destFile.text = content
+    }
+}
+
+jarLite.dependsOn generateLiteFabricMod
+jarLite {
+    from("${buildDir}/lite-resources") {
+        include 'fabric.mod.json'
+    }
+}
+
+// Task to package standalone datapack (without mod code)
+task packageDatapack(type: Zip) {
+    description = 'Creates a standalone datapack zip'
+    archiveBaseName = "${project.archives_base_name}-datapack"
+    archiveVersion = project.mod_version
+    destinationDirectory = file("${buildDir}/datapacks")
+    
+    from('data') {
+        into 'data'
+    }
+    from('pack.mcmeta')
+}
+
+// Add tasks to build - creates both FULL and LITE jars
+build.dependsOn packageDatapack
+build.dependsOn jarLite
+
+// Configure the maven publication
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
+    repositories {
+        // Add repositories to publish to here.
+    }
+}
+
