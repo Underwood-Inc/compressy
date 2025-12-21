@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "id": "compressedblocks",
+  "id": "compressy",
   "version": "${version}",
   "name": "Compressy",
   "description": "Compress ANY block up to 32 times! Uses Minecraft's block tags for automatic support. No giant config files needed!",
@@ -16,7 +16,7 @@
   "environment": "*",
   "entrypoints": {
     "main": [
-      "com.compressedblocks.CompressedBlocksMod"
+      "com.compressy.CompressyMod"
     ]
   },
   "depends": {

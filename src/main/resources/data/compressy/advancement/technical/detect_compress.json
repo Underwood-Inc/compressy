@@ -1,0 +1,19 @@
+{
+  "criteria": {
+    "use_compressor": {
+      "trigger": "minecraft:using_item",
+      "conditions": {
+        "item": {
+          "items": "minecraft:carrot_on_a_stick",
+          "predicates": {
+            "minecraft:custom_data": "{compressedblocks_wand:1b}"
+          }
+        }
+      }
+    }
+  },
+  "rewards": {
+    "function": "compressy:wand/use"
+  }
+}
+
