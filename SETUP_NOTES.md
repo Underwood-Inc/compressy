@@ -60,7 +60,7 @@
 
 ## Configuration
 
-Config file: `config/compressy.json`
+Config file: `config/compressy.toml` (TOML format - supports comments!)
 
 Options available via ModMenu or config file:
 - **showRomanNumerals** - Toggle tier display on placed blocks

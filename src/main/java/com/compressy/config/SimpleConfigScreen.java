@@ -45,7 +45,7 @@ public class SimpleConfigScreen extends Screen {
         
         // Info text
         context.drawCenteredTextWithShadow(this.textRenderer, 
-            Text.literal("Edit config/compressy.json to configure"), 
+            Text.literal("Edit config/compressy.toml to configure"), 
             this.width / 2, this.height / 2 - 30, 0xAAAAAA);
         
         context.drawCenteredTextWithShadow(this.textRenderer, 
@@ -53,7 +53,7 @@ public class SimpleConfigScreen extends Screen {
             this.width / 2, this.height / 2 - 10, 0xAAAAAA);
         
         context.drawCenteredTextWithShadow(this.textRenderer, 
-            Text.literal("Options: showRomanNumerals, excludedBlocks"), 
+            Text.literal("TOML format supports comments for guidance!"), 
             this.width / 2, this.height / 2 + 10, 0x55FF55);
     }
 }

@@ -52,6 +52,20 @@ public class CompressionRecipe extends SpecialCraftingRecipe {
             return false;
         }
         
+        // CRITICAL: Check exclusion list FIRST before any other processing
+        // This prevents flicker where the result briefly shows before being removed
+        var item = firstStack.getItem();
+        var block = net.minecraft.block.Block.getBlockFromItem(item);
+        
+        // If it's a block item (not already compressed), check exclusions immediately
+        if (block != null && block != net.minecraft.block.Blocks.AIR && item != net.minecraft.item.Items.AIR) {
+            String blockId = net.minecraft.registry.Registries.BLOCK.getId(block).toString();
+            if (com.compressy.config.CompressyConfig.get().isBlockExcluded(blockId)) {
+                return false; // Blocked by exclusion list - reject immediately
+            }
+        }
+        // If already compressed, we'll check exclusions in isCompressibleItem() using the stored block ID
+        
         // Check if it's a block item (can be placed)
         if (!isCompressibleItem(firstStack)) {
             return false;
@@ -361,10 +375,20 @@ public class CompressionRecipe extends SpecialCraftingRecipe {
         // If getBlockFromItem returns AIR, this item has no block form
         if (block == net.minecraft.block.Blocks.AIR && item != net.minecraft.item.Items.AIR) {
             // Not a block item - but allow if it's already compressed
-            return getCompressionLevel(stack) > 0;
+            int level = getCompressionLevel(stack);
+            if (level > 0) {
+                // Already compressed - check exclusion using the stored block ID
+                String storedBlockId = getCompressedBlockId(stack);
+                if (!storedBlockId.isEmpty() && com.compressy.config.CompressyConfig.get().isBlockExcluded(storedBlockId)) {
+                    return false; // The original block is excluded
+                }
+                return true; // Already compressed, allow re-compression
+            }
+            return false; // Not a block and not compressed
         }
         
-        // Check config exclusions
+        // For regular block items, exclusion check already happened in matches() method
+        // But we check again here for safety (in case this method is called elsewhere)
         String blockId = net.minecraft.registry.Registries.BLOCK.getId(block).toString();
         if (com.compressy.config.CompressyConfig.get().isBlockExcluded(blockId)) {
             return false;

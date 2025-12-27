@@ -217,8 +217,8 @@ public class CompressyBlockHandler {
             world.spawnEntity(marker);
         }
         
-        // 2. TEXT_DISPLAY - shows Roman numeral tier above the block (if enabled)
-        if (com.compressy.config.CompressyConfig.get().showRomanNumerals) {
+        // 2. TEXT_DISPLAY - shows Roman numeral tier above the block
+        // Always create the entity - visibility is controlled client-side per player
         var textDisplay = EntityType.TEXT_DISPLAY.create(world, SpawnReason.COMMAND);
         if (textDisplay != null) {
             textDisplay.setPosition(x, y + 1.0, z);
@@ -234,10 +234,9 @@ public class CompressyBlockHandler {
             textDisplay.setBillboardMode(DisplayEntity.BillboardMode.CENTER);
             textDisplay.addCommandTag(MARKER_TAG);
             textDisplay.addCommandTag(LABEL_TAG);
-                textDisplay.addCommandTag("compressy.pos." + pos.getX() + "_" + pos.getY() + "_" + pos.getZ());
+            textDisplay.addCommandTag("compressy.pos." + pos.getX() + "_" + pos.getY() + "_" + pos.getZ());
             
             world.spawnEntity(textDisplay);
-        }
         }
         
         // 3. BLOCK_DISPLAY OVERLAY - darkening tint based on compression level (if enabled)

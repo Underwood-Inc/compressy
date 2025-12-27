@@ -60,6 +60,11 @@ dependencies {
     // Fabric API for command registration
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
     
+    // TOML parser for config files (supports comments!)
+    // Bundle it into the mod JAR - use implementation + include
+    implementation "com.moandjiezana.toml:toml4j:0.7.2"
+    include "com.moandjiezana.toml:toml4j:0.7.2"
+    
     // Optional: ModMenu integration (config screen)
     modCompileOnly("com.terraformersmc:modmenu:13.0.0-beta.1") {
         transitive = false

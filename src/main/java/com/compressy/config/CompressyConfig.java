@@ -1,8 +1,7 @@
 package com.compressy.config;
 
 import com.compressy.CompressyMod;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.moandjiezana.toml.Toml;
 
 import net.fabricmc.loader.api.FabricLoader;
 
@@ -19,13 +18,13 @@ import java.util.List;
  * - Block exclusions (blocks that cannot be compressed)
  * - Roman numeral label toggle (FULL mode only)
  * 
- * Config file location: config/compressy.json
+ * Config file location: config/compressy.toml
+ * Uses TOML format to support comments for user guidance!
  */
 public class CompressyConfig {
     
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Path CONFIG_PATH = FabricLoader.getInstance()
-            .getConfigDir().resolve("compressy.json");
+            .getConfigDir().resolve("compressy.toml");
     
     private static CompressyConfig INSTANCE;
     
@@ -167,36 +166,133 @@ public class CompressyConfig {
     }
     
     /**
+     * Reload config from disk (useful after external edits).
+     */
+    public static void reload() {
+        INSTANCE = null; // Force reload
+        load();
+    }
+    
+    /**
      * Load config from file, or create default if not exists.
      */
     public static void load() {
         if (Files.exists(CONFIG_PATH)) {
             try {
-                String json = Files.readString(CONFIG_PATH);
-                INSTANCE = GSON.fromJson(json, CompressyConfig.class);
+                Toml toml = new Toml().read(CONFIG_PATH.toFile());
+                INSTANCE = new CompressyConfig();
+                
+                // Load boolean values
+                INSTANCE.showRomanNumerals = toml.getBoolean("display.showRomanNumerals", true);
+                INSTANCE.showDarkeningOverlay = toml.getBoolean("display.showDarkeningOverlay", true);
+                INSTANCE.useDefaultExclusions = toml.getBoolean("blocks.useDefaultExclusions", true);
+                INSTANCE.useAllowlist = toml.getBoolean("blocks.useAllowlist", false);
+                
+                // Load lists
+                List<Object> excluded = toml.getList("blocks.excludedBlocks");
+                if (excluded != null) {
+                    INSTANCE.excludedBlocks = new ArrayList<>();
+                    for (Object item : excluded) {
+                        if (item != null) {
+                            INSTANCE.excludedBlocks.add(item.toString());
+                        }
+                    }
+                } else {
+                    INSTANCE.excludedBlocks = new ArrayList<>();
+                }
+                
+                List<Object> allowed = toml.getList("blocks.allowedBlocks");
+                if (allowed != null) {
+                    INSTANCE.allowedBlocks = new ArrayList<>();
+                    for (Object item : allowed) {
+                        if (item != null) {
+                            INSTANCE.allowedBlocks.add(item.toString());
+                        }
+                    }
+                } else {
+                    INSTANCE.allowedBlocks = new ArrayList<>();
+                }
+                
                 CompressyMod.LOGGER.info("Loaded config from {}", CONFIG_PATH);
-            } catch (IOException e) {
+                CompressyMod.LOGGER.info("  showRomanNumerals: {}", INSTANCE.showRomanNumerals);
+                CompressyMod.LOGGER.info("  showDarkeningOverlay: {}", INSTANCE.showDarkeningOverlay);
+            } catch (Exception e) {
                 CompressyMod.LOGGER.error("Failed to load config, using defaults", e);
                 INSTANCE = new CompressyConfig();
             }
         } else {
             INSTANCE = new CompressyConfig();
-            save(); // Create default config file
+            save(); // Create default config file with comments
             CompressyMod.LOGGER.info("Created default config at {}", CONFIG_PATH);
         }
     }
     
     /**
-     * Save current config to file.
+     * Save current config to file with helpful comments.
      */
     public static void save() {
         try {
             Files.createDirectories(CONFIG_PATH.getParent());
-            Files.writeString(CONFIG_PATH, GSON.toJson(INSTANCE));
+            
+            // Build TOML file with helpful comments
+            StringBuilder toml = new StringBuilder();
+            toml.append("# Compressy Configuration File\n");
+            toml.append("# This file uses TOML format - you can add comments like this!\n");
+            toml.append("# Edit this file directly or use ModMenu in-game.\n\n");
+            
+            toml.append("# === DISPLAY SETTINGS ===\n");
+            toml.append("# These settings only apply to FULL mode (not LITE mode).\n");
+            toml.append("[display]\n");
+            toml.append("# Show Roman numeral tier labels (I, II, III...) above placed compressed blocks.\n");
+            toml.append("# Set to false to hide the tier display.\n");
+            toml.append("showRomanNumerals = ").append(INSTANCE.showRomanNumerals).append("\n\n");
+            toml.append("# Show darkening overlay effect on higher tier compressed blocks.\n");
+            toml.append("# Higher compression levels get progressively darker overlays.\n");
+            toml.append("showDarkeningOverlay = ").append(INSTANCE.showDarkeningOverlay).append("\n\n");
+            
+            toml.append("# === BLOCK MANAGEMENT ===\n");
+            toml.append("# Control which blocks can be compressed.\n");
+            toml.append("[blocks]\n");
+            toml.append("# Allowlist mode: If true, ONLY blocks in allowedBlocks can be compressed.\n");
+            toml.append("# If false, all blocks can be compressed EXCEPT those in excludedBlocks.\n");
+            toml.append("useAllowlist = ").append(INSTANCE.useAllowlist).append("\n\n");
+            toml.append("# Use default exclusions: Automatically exclude technical/non-solid blocks.\n");
+            toml.append("# This includes air, torches, rails, beds, doors, etc.\n");
+            toml.append("# Only applies when useAllowlist is false.\n");
+            toml.append("useDefaultExclusions = ").append(INSTANCE.useDefaultExclusions).append("\n\n");
+            toml.append("# Excluded blocks: Blocks that CANNOT be compressed (when useAllowlist is false).\n");
+            toml.append("# Format: block IDs like \"minecraft:torch\" or \"modid:blockname\"\n");
+            toml.append("# Example: excludedBlocks = [\"minecraft:bedrock\", \"minecraft:command_block\"]\n");
+            toml.append("excludedBlocks = ").append(formatList(INSTANCE.excludedBlocks)).append("\n\n");
+            toml.append("# Allowed blocks: Blocks that CAN be compressed (when useAllowlist is true).\n");
+            toml.append("# Format: block IDs like \"minecraft:stone\" or \"modid:blockname\"\n");
+            toml.append("# Example: allowedBlocks = [\"minecraft:stone\", \"minecraft:dirt\", \"minecraft:cobblestone\"]\n");
+            toml.append("allowedBlocks = ").append(formatList(INSTANCE.allowedBlocks)).append("\n");
+            
+            Files.writeString(CONFIG_PATH, toml.toString());
             CompressyMod.LOGGER.info("Saved config to {}", CONFIG_PATH);
+            CompressyMod.LOGGER.info("  showRomanNumerals: {}", INSTANCE.showRomanNumerals);
+            CompressyMod.LOGGER.info("  showDarkeningOverlay: {}", INSTANCE.showDarkeningOverlay);
         } catch (IOException e) {
             CompressyMod.LOGGER.error("Failed to save config", e);
         }
+    }
+    
+    /**
+     * Format a list for TOML output.
+     */
+    private static String formatList(List<String> list) {
+        if (list == null || list.isEmpty()) {
+            return "[]";
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("[");
+        for (int i = 0; i < list.size(); i++) {
+            if (i > 0) sb.append(", ");
+            sb.append("\"").append(list.get(i)).append("\"");
+        }
+        sb.append("]");
+        return sb.toString();
     }
     
     /**
