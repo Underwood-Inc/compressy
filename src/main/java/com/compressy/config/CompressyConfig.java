@@ -60,6 +60,22 @@ public class CompressyConfig {
      */
     public boolean useDefaultExclusions = true;
     
+    /**
+     * Whether to use allowlist mode.
+     * If true, ONLY blocks in allowedBlocks can be compressed (exclusions are ignored).
+     * If false, all blocks can be compressed EXCEPT those in excludedBlocks.
+     * Default: false
+     */
+    public boolean useAllowlist = false;
+    
+    /**
+     * List of block IDs that CAN be compressed (when useAllowlist is true).
+     * Format: "minecraft:stone", "minecraft:dirt", etc.
+     * 
+     * When useAllowlist is false, this list is ignored.
+     */
+    public List<String> allowedBlocks = new ArrayList<>();
+    
     // === DEFAULT EXCLUSIONS ===
     // These are blocks that don't make sense to compress (non-solid, technical, etc.)
     
@@ -190,7 +206,12 @@ public class CompressyConfig {
      * @return true if the block should NOT be compressible
      */
     public boolean isBlockExcluded(String blockId) {
-        // Check user exclusions
+        // If allowlist mode is enabled, check if block is in allowlist
+        if (useAllowlist) {
+            return !allowedBlocks.contains(blockId);
+        }
+        
+        // Exclusion mode: check user exclusions
         if (excludedBlocks.contains(blockId)) {
             return true;
         }
@@ -201,6 +222,16 @@ public class CompressyConfig {
         }
         
         return false;
+    }
+    
+    /**
+     * Check if a block ID is allowed to be compressed.
+     * 
+     * @param blockId The block ID (e.g., "minecraft:stone")
+     * @return true if the block CAN be compressed
+     */
+    public boolean isBlockAllowed(String blockId) {
+        return !isBlockExcluded(blockId);
     }
     
     /**

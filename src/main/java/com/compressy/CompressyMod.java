@@ -120,10 +120,11 @@ public class CompressyMod implements ModInitializer {
         com.compressy.config.CompressyConfig.load();
         LOGGER.info("Configuration loaded!");
         
-        // Register custom recipe types - THIS IS THE MAGIC!
-        // These recipes work with ANY crafting table, machine, or automation mod!
+        // Register custom recipe types
+        // NOTE: Only compression uses recipes - decompression uses direct mixin interception
         registerRecipes();
         LOGGER.info("Compression recipes registered!");
+        LOGGER.info("Decompression: Using direct mixin interception (bypasses broken recipe matching)");
         
         // Register block placement handler based on mode
         if (LITE_MODE) {
@@ -146,8 +147,11 @@ public class CompressyMod implements ModInitializer {
     }
     
     /**
-     * Register custom recipe serializers for compression and decompression.
-     * These are "special" recipes that work dynamically for any block!
+     * Register custom recipe serializers.
+     * 
+     * COMPRESSION: Uses SpecialCraftingRecipe (works fine)
+     * DECOMPRESSION: DISABLED - uses direct mixin interception instead
+     *   (recipe matching is broken - vanilla recipes match first INCONSISTENTLY FOR RANDOM BLOCKS)
      */
     private void registerRecipes() {
         Registry.register(
@@ -156,13 +160,17 @@ public class CompressyMod implements ModInitializer {
             COMPRESSION_RECIPE_SERIALIZER
         );
         
-        Registry.register(
-            Registries.RECIPE_SERIALIZER,
-            Identifier.of(MOD_ID, "decompression"),
-            DECOMPRESSION_RECIPE_SERIALIZER
-        );
+        // DECOMPRESSION RECIPE DISABLED - using mixin instead
+        // The recipe matching system is broken - vanilla recipes always match first
+        // So we intercept crafting results directly via CraftingScreenHandlerMixin
+        // Registry.register(
+        //     Registries.RECIPE_SERIALIZER,
+        //     Identifier.of(MOD_ID, "decompression"),
+        //     DECOMPRESSION_RECIPE_SERIALIZER
+        // );
         
-        LOGGER.info("Registered compression and decompression recipe types");
+        LOGGER.info("Registered compression recipe type");
+        LOGGER.info("Decompression: Using mixin interception (recipe system bypassed)");
     }
 
     /**

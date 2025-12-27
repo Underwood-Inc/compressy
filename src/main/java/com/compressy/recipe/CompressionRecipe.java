@@ -8,7 +8,6 @@ import net.minecraft.recipe.SpecialCraftingRecipe;
 import net.minecraft.recipe.book.CraftingRecipeCategory;
 import net.minecraft.recipe.input.CraftingRecipeInput;
 import net.minecraft.registry.RegistryWrapper;
-import net.minecraft.registry.tag.ItemTags;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.world.World;
@@ -102,8 +101,16 @@ public class CompressionRecipe extends SpecialCraftingRecipe {
             // Already compressed - get the original block ID
             blockId = getCompressedBlockId(firstStack);
         } else {
-            // Regular item - use its registry name
-            blockId = net.minecraft.registry.Registries.ITEM.getId(firstStack.getItem()).toString();
+            // Regular item - get the BLOCK ID (not item ID) for consistency
+            // This ensures we always store block IDs, which works for ALL blocks
+            var item = firstStack.getItem();
+            var block = net.minecraft.block.Block.getBlockFromItem(item);
+            if (block != null && block != net.minecraft.block.Blocks.AIR) {
+                blockId = net.minecraft.registry.Registries.BLOCK.getId(block).toString();
+            } else {
+                // Fallback to item ID if somehow no block exists (shouldn't happen for compressible items)
+                blockId = net.minecraft.registry.Registries.ITEM.getId(item).toString();
+            }
         }
         
         // Create output item (same item type as input)
@@ -133,6 +140,25 @@ public class CompressionRecipe extends SpecialCraftingRecipe {
         customData.putInt("compressed_level", newLevel);
         customData.putString("compressed_block", blockId);
         output.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(customData));
+        
+        // Log compression for debugging
+        var outputItemId = net.minecraft.registry.Registries.ITEM.getId(output.getItem()).toString();
+        CompressyMod.LOGGER.info("CompressionRecipe.craft(): Created compressed item: {}, level: {}, blockId: {}", outputItemId, newLevel, blockId);
+        
+        // Verify the data was saved
+        var savedData = output.get(DataComponentTypes.CUSTOM_DATA);
+        if (savedData != null) {
+            var savedNbt = savedData.copyNbt();
+            if (savedNbt != null) {
+                int savedLevel = com.compressy.util.NbtHelper.getInt(savedNbt, "compressed_level", 0);
+                String savedBlockId = com.compressy.util.NbtHelper.getString(savedNbt, "compressed_block", "");
+                CompressyMod.LOGGER.info("  Verified saved data: level={}, blockId={}", savedLevel, savedBlockId);
+            } else {
+                CompressyMod.LOGGER.error("  ERROR: CUSTOM_DATA exists but copyNbt() returned null for {}", outputItemId);
+            }
+        } else {
+            CompressyMod.LOGGER.error("  ERROR: CUSTOM_DATA was not saved for {}", outputItemId);
+        }
         
         // Add enchantment glint for higher levels (starts at level 5)
         if (newLevel >= 5) {

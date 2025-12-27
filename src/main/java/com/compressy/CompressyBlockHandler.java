@@ -327,9 +327,30 @@ public class CompressyBlockHandler {
     
     /**
      * Create a compressed item from stored data
+     * blockId should be a BLOCK ID (not item ID) for consistency
      */
     private static ItemStack createCompressedItem(String blockId, int level) {
-        var item = net.minecraft.registry.Registries.ITEM.get(Identifier.of(blockId));
+        // Try to get block first (blockId should be a block ID)
+        var block = net.minecraft.registry.Registries.BLOCK.get(Identifier.of(blockId));
+        net.minecraft.item.Item item;
+        if (block != null && block != Blocks.AIR) {
+            // Get item from block - this is the correct way
+            item = block.asItem();
+            if (item == null || item == net.minecraft.item.Items.AIR) {
+                // Fallback: try to get item directly (might be item ID in old saves)
+                item = net.minecraft.registry.Registries.ITEM.get(Identifier.of(blockId));
+            }
+        } else {
+            // Fallback: try to get item directly (might be item ID in old saves)
+            item = net.minecraft.registry.Registries.ITEM.get(Identifier.of(blockId));
+        }
+        
+        if (item == null || item == net.minecraft.item.Items.AIR) {
+            CompressyMod.LOGGER.error("createCompressedItem: Could not resolve blockId {} to any item", blockId);
+            // Last resort: use stone
+            item = net.minecraft.item.Items.STONE;
+        }
+        
         ItemStack stack = new ItemStack(item, 1);
         
         // Set the compression data

@@ -1,5 +1,6 @@
 package com.compressy.util;
 
+import com.compressy.CompressyMod;
 import net.minecraft.nbt.NbtCompound;
 
 /**
@@ -10,14 +11,31 @@ public class NbtHelper {
     
     /**
      * Get an int from NBT, with fallback for missing keys.
+     * More robust with multiple fallback methods.
      */
     public static int getInt(NbtCompound nbt, String key, int defaultValue) {
-        if (nbt == null || !nbt.contains(key)) {
+        if (nbt == null) {
+            CompressyMod.LOGGER.debug("NbtHelper.getInt: nbt is null for key {}", key);
             return defaultValue;
         }
+        
+        if (!nbt.contains(key)) {
+            CompressyMod.LOGGER.debug("NbtHelper.getInt: key '{}' not found in NBT. Available keys: {}", key, nbt.getKeys());
+            return defaultValue;
+        }
+        
         try {
-            return nbt.getInt(key).orElse(defaultValue);
+            var result = nbt.getInt(key);
+            if (result.isPresent()) {
+                int value = result.get();
+                CompressyMod.LOGGER.debug("NbtHelper.getInt: key '{}' = {}", key, value);
+                return value;
+            } else {
+                CompressyMod.LOGGER.warn("NbtHelper.getInt: key '{}' exists but Optional is empty", key);
+                return defaultValue;
+            }
         } catch (Exception e) {
+            CompressyMod.LOGGER.error("NbtHelper.getInt: Exception reading key '{}' from NBT", key, e);
             return defaultValue;
         }
     }
@@ -30,8 +48,10 @@ public class NbtHelper {
             return defaultValue;
         }
         try {
-            return nbt.getString(key).orElse(defaultValue);
+            var result = nbt.getString(key);
+            return result.orElse(defaultValue);
         } catch (Exception e) {
+            CompressyMod.LOGGER.error("NbtHelper.getString: Exception reading key '{}' from NBT", key, e);
             return defaultValue;
         }
     }
@@ -44,8 +64,10 @@ public class NbtHelper {
             return defaultValue;
         }
         try {
-            return nbt.getBoolean(key).orElse(defaultValue);
+            var result = nbt.getBoolean(key);
+            return result.orElse(defaultValue);
         } catch (Exception e) {
+            CompressyMod.LOGGER.error("NbtHelper.getBoolean: Exception reading key '{}' from NBT", key, e);
             return defaultValue;
         }
     }
