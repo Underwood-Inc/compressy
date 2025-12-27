@@ -96,7 +96,7 @@ If you have [ModMenu](https://modrinth.com/mod/modmenu) installed, you can confi
 | **Block Exclusions** | Exclude specific blocks from compression |
 | **Use Default Exclusions** | Auto-exclude non-solid blocks (flowers, torches, etc.) |
 
-Config file location: `config/compressy.json`
+Config file location: `config/compressy.toml` (TOML format with comments!)
 
 ---
 

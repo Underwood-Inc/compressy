@@ -217,8 +217,8 @@ public class CompressyBlockHandler {
             world.spawnEntity(marker);
         }
         
-        // 2. TEXT_DISPLAY - shows Roman numeral tier above the block (if enabled)
-        if (com.compressy.config.CompressyConfig.get().showRomanNumerals) {
+        // 2. TEXT_DISPLAY - shows Roman numeral tier above the block
+        // Always create the entity - visibility is controlled client-side per player
         var textDisplay = EntityType.TEXT_DISPLAY.create(world, SpawnReason.COMMAND);
         if (textDisplay != null) {
             textDisplay.setPosition(x, y + 1.0, z);
@@ -234,10 +234,9 @@ public class CompressyBlockHandler {
             textDisplay.setBillboardMode(DisplayEntity.BillboardMode.CENTER);
             textDisplay.addCommandTag(MARKER_TAG);
             textDisplay.addCommandTag(LABEL_TAG);
-                textDisplay.addCommandTag("compressy.pos." + pos.getX() + "_" + pos.getY() + "_" + pos.getZ());
+            textDisplay.addCommandTag("compressy.pos." + pos.getX() + "_" + pos.getY() + "_" + pos.getZ());
             
             world.spawnEntity(textDisplay);
-        }
         }
         
         // 3. BLOCK_DISPLAY OVERLAY - darkening tint based on compression level (if enabled)
@@ -327,9 +326,30 @@ public class CompressyBlockHandler {
     
     /**
      * Create a compressed item from stored data
+     * blockId should be a BLOCK ID (not item ID) for consistency
      */
     private static ItemStack createCompressedItem(String blockId, int level) {
-        var item = net.minecraft.registry.Registries.ITEM.get(Identifier.of(blockId));
+        // Try to get block first (blockId should be a block ID)
+        var block = net.minecraft.registry.Registries.BLOCK.get(Identifier.of(blockId));
+        net.minecraft.item.Item item;
+        if (block != null && block != Blocks.AIR) {
+            // Get item from block - this is the correct way
+            item = block.asItem();
+            if (item == null || item == net.minecraft.item.Items.AIR) {
+                // Fallback: try to get item directly (might be item ID in old saves)
+                item = net.minecraft.registry.Registries.ITEM.get(Identifier.of(blockId));
+            }
+        } else {
+            // Fallback: try to get item directly (might be item ID in old saves)
+            item = net.minecraft.registry.Registries.ITEM.get(Identifier.of(blockId));
+        }
+        
+        if (item == null || item == net.minecraft.item.Items.AIR) {
+            CompressyMod.LOGGER.error("createCompressedItem: Could not resolve blockId {} to any item", blockId);
+            // Last resort: use stone
+            item = net.minecraft.item.Items.STONE;
+        }
+        
         ItemStack stack = new ItemStack(item, 1);
         
         // Set the compression data

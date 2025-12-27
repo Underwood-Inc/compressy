@@ -1,0 +1,6 @@
+{
+  "modmenu.nameTranslation.compressy": "Compressy - Block Compression Mod",
+  "modmenu.descriptionTranslation.compressy": "Squish ALL your blocks into tiny packages! Compress ANY block up to 32 times!\n\n§6Features:§r\n• Compress 9 blocks into 1 (up to 32 levels!)\n• Works with ANY block - automatic mod support via block tags\n• Standard crafting recipes - compatible with automation mods\n• Two versions: FULL (placeable with visual overlays) and LITE (inventory-only)\n• Visual tier indicators (Roman numerals + darkening effect)\n• Fully configurable via ModMenu or config file\n• Zero performance overhead in LITE mode\n\n§aUse §e/cblocks help§a to get started!",
+  "modmenu.summaryTranslation.compressy": "Compress ANY block up to 32 times! Turn 9 blocks into 1, then keep going! Uses Minecraft's block tags for automatic mod support."
+}
+

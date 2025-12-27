@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.compressy.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "CraftingScreenHandlerMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
+

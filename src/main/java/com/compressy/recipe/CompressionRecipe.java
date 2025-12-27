@@ -8,7 +8,6 @@ import net.minecraft.recipe.SpecialCraftingRecipe;
 import net.minecraft.recipe.book.CraftingRecipeCategory;
 import net.minecraft.recipe.input.CraftingRecipeInput;
 import net.minecraft.registry.RegistryWrapper;
-import net.minecraft.registry.tag.ItemTags;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.world.World;
@@ -52,6 +51,20 @@ public class CompressionRecipe extends SpecialCraftingRecipe {
         if (firstStack.isEmpty()) {
             return false;
         }
+        
+        // CRITICAL: Check exclusion list FIRST before any other processing
+        // This prevents flicker where the result briefly shows before being removed
+        var item = firstStack.getItem();
+        var block = net.minecraft.block.Block.getBlockFromItem(item);
+        
+        // If it's a block item (not already compressed), check exclusions immediately
+        if (block != null && block != net.minecraft.block.Blocks.AIR && item != net.minecraft.item.Items.AIR) {
+            String blockId = net.minecraft.registry.Registries.BLOCK.getId(block).toString();
+            if (com.compressy.config.CompressyConfig.get().isBlockExcluded(blockId)) {
+                return false; // Blocked by exclusion list - reject immediately
+            }
+        }
+        // If already compressed, we'll check exclusions in isCompressibleItem() using the stored block ID
         
         // Check if it's a block item (can be placed)
         if (!isCompressibleItem(firstStack)) {
@@ -102,8 +115,16 @@ public class CompressionRecipe extends SpecialCraftingRecipe {
             // Already compressed - get the original block ID
             blockId = getCompressedBlockId(firstStack);
         } else {
-            // Regular item - use its registry name
-            blockId = net.minecraft.registry.Registries.ITEM.getId(firstStack.getItem()).toString();
+            // Regular item - get the BLOCK ID (not item ID) for consistency
+            // This ensures we always store block IDs, which works for ALL blocks
+            var item = firstStack.getItem();
+            var block = net.minecraft.block.Block.getBlockFromItem(item);
+            if (block != null && block != net.minecraft.block.Blocks.AIR) {
+                blockId = net.minecraft.registry.Registries.BLOCK.getId(block).toString();
+            } else {
+                // Fallback to item ID if somehow no block exists (shouldn't happen for compressible items)
+                blockId = net.minecraft.registry.Registries.ITEM.getId(item).toString();
+            }
         }
         
         // Create output item (same item type as input)
@@ -133,6 +154,25 @@ public class CompressionRecipe extends SpecialCraftingRecipe {
         customData.putInt("compressed_level", newLevel);
         customData.putString("compressed_block", blockId);
         output.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(customData));
+        
+        // Log compression for debugging
+        var outputItemId = net.minecraft.registry.Registries.ITEM.getId(output.getItem()).toString();
+        CompressyMod.LOGGER.info("CompressionRecipe.craft(): Created compressed item: {}, level: {}, blockId: {}", outputItemId, newLevel, blockId);
+        
+        // Verify the data was saved
+        var savedData = output.get(DataComponentTypes.CUSTOM_DATA);
+        if (savedData != null) {
+            var savedNbt = savedData.copyNbt();
+            if (savedNbt != null) {
+                int savedLevel = com.compressy.util.NbtHelper.getInt(savedNbt, "compressed_level", 0);
+                String savedBlockId = com.compressy.util.NbtHelper.getString(savedNbt, "compressed_block", "");
+                CompressyMod.LOGGER.info("  Verified saved data: level={}, blockId={}", savedLevel, savedBlockId);
+            } else {
+                CompressyMod.LOGGER.error("  ERROR: CUSTOM_DATA exists but copyNbt() returned null for {}", outputItemId);
+            }
+        } else {
+            CompressyMod.LOGGER.error("  ERROR: CUSTOM_DATA was not saved for {}", outputItemId);
+        }
         
         // Add enchantment glint for higher levels (starts at level 5)
         if (newLevel >= 5) {
@@ -335,10 +375,20 @@ public class CompressionRecipe extends SpecialCraftingRecipe {
         // If getBlockFromItem returns AIR, this item has no block form
         if (block == net.minecraft.block.Blocks.AIR && item != net.minecraft.item.Items.AIR) {
             // Not a block item - but allow if it's already compressed
-            return getCompressionLevel(stack) > 0;
+            int level = getCompressionLevel(stack);
+            if (level > 0) {
+                // Already compressed - check exclusion using the stored block ID
+                String storedBlockId = getCompressedBlockId(stack);
+                if (!storedBlockId.isEmpty() && com.compressy.config.CompressyConfig.get().isBlockExcluded(storedBlockId)) {
+                    return false; // The original block is excluded
+                }
+                return true; // Already compressed, allow re-compression
+            }
+            return false; // Not a block and not compressed
         }
         
-        // Check config exclusions
+        // For regular block items, exclusion check already happened in matches() method
+        // But we check again here for safety (in case this method is called elsewhere)
         String blockId = net.minecraft.registry.Registries.BLOCK.getId(block).toString();
         if (com.compressy.config.CompressyConfig.get().isBlockExcluded(blockId)) {
             return false;

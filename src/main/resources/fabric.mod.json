@@ -22,6 +22,9 @@
       "com.compressy.config.CompressyModMenuIntegration"
     ]
   },
+  "mixins": [
+    "compressy.mixins.json"
+  ],
   "depends": {
     "fabricloader": ">=0.16.0",
     "fabric-api": "*",
