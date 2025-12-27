@@ -35,59 +35,109 @@ public class CraftingScreenHandlerMixin {
         method = "onContentChanged",
         at = @At("HEAD")
     )
-    private void overrideCraftingResultBeforeVanilla(net.minecraft.inventory.Inventory inventory, CallbackInfo ci) {
-        CompressyMod.LOGGER.debug("CraftingScreenHandlerMixin.onContentChanged: CALLED AT HEAD");
+    private void checkForCompressedBlock(net.minecraft.inventory.Inventory inventory, CallbackInfo ci) {
+        CompressyMod.LOGGER.info("CraftingScreenHandlerMixin.onContentChanged: CALLED AT HEAD");
         
         // Get the world from the player
         if (player == null) {
+            CompressyMod.LOGGER.debug("  Player is null");
             return;
         }
         
         World world = player.getEntityWorld();
         if (world == null || world.isClient()) {
+            CompressyMod.LOGGER.debug("  World is null or client");
             return;
         }
         
         // Check if there's exactly one item (decompression pattern) - CHECK FIRST BEFORE VANILLA
         // Need to cast to CraftingInventory to access the crafting grid
         if (!(inventory instanceof CraftingInventory craftingInventory)) {
+            CompressyMod.LOGGER.debug("  Not a CraftingInventory");
             return;
         }
         
-        ItemStack singleItem = ItemStack.EMPTY;
-        int itemCount = 0;
+        // Count how many SLOTS contain compressed blocks (not total items)
+        ItemStack singleCompressedItem = ItemStack.EMPTY;
+        int compressedSlotCount = 0;
+        int totalItemSlots = 0;
         
+        CompressyMod.LOGGER.info("  Checking {} slots", craftingInventory.size());
         for (int i = 0; i < craftingInventory.size(); i++) {
             ItemStack stack = craftingInventory.getStack(i);
             if (!stack.isEmpty()) {
-                itemCount++;
-                if (itemCount > 1) {
-                    return; // More than one item, let vanilla handle it
+                totalItemSlots++;
+                int compressionLevel = getCompressionLevel(stack);
+                CompressyMod.LOGGER.info("  Slot {}: {} x{} (compressed: {})", i, 
+                    net.minecraft.registry.Registries.ITEM.getId(stack.getItem()).toString(), 
+                    stack.getCount(),
+                    compressionLevel > 0 ? "YES" : "NO");
+                
+                if (compressionLevel > 0) {
+                    compressedSlotCount++;
+                    if (compressedSlotCount == 1) {
+                        singleCompressedItem = stack;
+                    }
                 }
-                singleItem = stack;
             }
         }
         
-        if (singleItem.isEmpty()) {
+        // CRITICAL: If no compressed blocks, let vanilla handle it - DO NOT INTERFERE AT ALL
+        if (compressedSlotCount == 0) {
+            CompressyMod.LOGGER.debug("  No compressed blocks found ({} item slots), letting vanilla handle it - NOT BLOCKING", totalItemSlots);
+            return; // Early return - do not touch result slot at all
+        }
+        
+        // If multiple SLOTS have compressed blocks, check if it's a valid compression recipe
+        if (compressedSlotCount > 1) {
+            if (isValidCompressionRecipe(craftingInventory)) {
+                // Valid compression recipe (9 identical compressed blocks) - allow it
+                CompressyMod.LOGGER.info("  Multiple compressed blocks form valid compression recipe - allowing");
+                return; // Let CompressionRecipe handle it
+            } else {
+                // Invalid pattern - block to prevent vanilla recipes
+                CompressyMod.LOGGER.warn("  Multiple slots ({}) contain compressed blocks but NOT a valid compression recipe - BLOCKING", compressedSlotCount);
+                CraftingScreenHandler handler = (CraftingScreenHandler)(Object)this;
+                Slot resultSlot = handler.getSlot(0);
+                if (resultSlot != null) {
+                    resultSlot.setStack(ItemStack.EMPTY);
+                    CompressyMod.LOGGER.info("  Result slot cleared - crafting blocked");
+                }
+                return; // Block crafting completely
+            }
+        }
+        
+        // Exactly one slot has compressed blocks - proceed with decompression
+        if (singleCompressedItem.isEmpty()) {
+            CompressyMod.LOGGER.debug("  Grid is empty");
             return;
         }
         
-        // Check if it's a compressed block - THIS MUST HAPPEN BEFORE VANILLA CALCULATES RESULT
-        int compressionLevel = getCompressionLevel(singleItem);
+        CompressyMod.LOGGER.info("  Found single compressed slot: {} x{}", 
+            net.minecraft.registry.Registries.ITEM.getId(singleCompressedItem.getItem()).toString(), 
+            singleCompressedItem.getCount());
+        
+        // Check compression level
+        int compressionLevel = getCompressionLevel(singleCompressedItem);
+        CompressyMod.LOGGER.info("  Compression level: {}", compressionLevel);
+        
         if (compressionLevel <= 0) {
-            return; // Not compressed, let vanilla handle it
+            CompressyMod.LOGGER.warn("  Compression level is 0 but slot was marked as compressed - this shouldn't happen");
+            return;
         }
         
         // IT'S A COMPRESSED BLOCK! Set result IMMEDIATELY before vanilla can interfere
-        CompressyMod.LOGGER.info("*** COMPRESSED BLOCK DETECTED AT HEAD! Level {} - Setting result BEFORE vanilla ***", compressionLevel);
+        CompressyMod.LOGGER.info("*** COMPRESSED BLOCK DETECTED! Level {} - Setting result BEFORE vanilla ***", compressionLevel);
         
-        String blockId = getCompressedBlockId(singleItem);
+        String blockId = getCompressedBlockId(singleCompressedItem);
+        CompressyMod.LOGGER.info("  Block ID: '{}'", blockId);
         if (blockId.isEmpty()) {
-            blockId = net.minecraft.registry.Registries.ITEM.getId(singleItem.getItem()).toString();
+            blockId = net.minecraft.registry.Registries.ITEM.getId(singleCompressedItem.getItem()).toString();
+            CompressyMod.LOGGER.warn("  Block ID was empty, using item ID: {}", blockId);
         }
         
         // Create decompressed result
-        ItemStack result = createDecompressedResult(singleItem, compressionLevel, blockId, world);
+        ItemStack result = createDecompressedResult(singleCompressedItem, compressionLevel, blockId, world);
         
         if (!result.isEmpty()) {
             // Set result slot IMMEDIATELY - this happens BEFORE vanilla calculates
@@ -95,9 +145,13 @@ public class CraftingScreenHandlerMixin {
             Slot resultSlot = handler.getSlot(0);
             if (resultSlot != null) {
                 resultSlot.setStack(result);
-                CompressyMod.LOGGER.info("*** Result set to {} x{} BEFORE vanilla calculation ***", 
+                CompressyMod.LOGGER.info("*** SUCCESS! Result set to {} x{} BEFORE vanilla calculation ***", 
                     net.minecraft.registry.Registries.ITEM.getId(result.getItem()).toString(), result.getCount());
+            } else {
+                CompressyMod.LOGGER.error("  ERROR: Result slot is null!");
             }
+        } else {
+            CompressyMod.LOGGER.error("  ERROR: createDecompressedResult returned EMPTY!");
         }
     }
     
@@ -121,26 +175,51 @@ public class CraftingScreenHandlerMixin {
             return;
         }
         
-        // Check for single compressed block again
-        ItemStack singleItem = ItemStack.EMPTY;
-        int itemCount = 0;
+        // Check for compressed blocks again - count SLOTS with compressed blocks
+        ItemStack singleCompressedItem = ItemStack.EMPTY;
+        int compressedSlotCount = 0;
         
         for (int i = 0; i < craftingInventory.size(); i++) {
             ItemStack stack = craftingInventory.getStack(i);
             if (!stack.isEmpty()) {
-                itemCount++;
-                if (itemCount > 1) {
-                    return;
+                int compressionLevel = getCompressionLevel(stack);
+                if (compressionLevel > 0) {
+                    compressedSlotCount++;
+                    if (compressedSlotCount == 1) {
+                        singleCompressedItem = stack;
+                    }
                 }
-                singleItem = stack;
             }
         }
         
-        if (singleItem.isEmpty()) {
+        // CRITICAL: If no compressed blocks, let vanilla handle it - DO NOT INTERFERE AT ALL
+        if (compressedSlotCount == 0) {
+            return; // Early return - do not touch result slot at all
+        }
+        
+        // If multiple slots have compressed blocks, check if it's a valid compression recipe
+        if (compressedSlotCount > 1) {
+            if (isValidCompressionRecipe(craftingInventory)) {
+                // Valid compression recipe - allow it
+                return; // Let CompressionRecipe handle it
+            } else {
+                // Invalid pattern - block to prevent vanilla recipes
+                CompressyMod.LOGGER.warn("TAIL: Multiple slots ({}) contain compressed blocks but NOT a valid compression recipe - BLOCKING", compressedSlotCount);
+                CraftingScreenHandler handler = (CraftingScreenHandler)(Object)this;
+                Slot resultSlot = handler.getSlot(0);
+                if (resultSlot != null) {
+                    resultSlot.setStack(ItemStack.EMPTY);
+                }
+                return;
+            }
+        }
+        
+        // If not exactly one compressed block, let vanilla handle it
+        if (singleCompressedItem.isEmpty()) {
             return;
         }
         
-        int compressionLevel = getCompressionLevel(singleItem);
+        int compressionLevel = getCompressionLevel(singleCompressedItem);
         if (compressionLevel <= 0) {
             return;
         }
@@ -152,12 +231,12 @@ public class CraftingScreenHandlerMixin {
             ItemStack currentResult = resultSlot.getStack();
             
             // Check if vanilla overwrote our result (wrong item or wrong count)
-            String blockId = getCompressedBlockId(singleItem);
+            String blockId = getCompressedBlockId(singleCompressedItem);
             if (blockId.isEmpty()) {
-                blockId = net.minecraft.registry.Registries.ITEM.getId(singleItem.getItem()).toString();
+                blockId = net.minecraft.registry.Registries.ITEM.getId(singleCompressedItem.getItem()).toString();
             }
             
-            ItemStack correctResult = createDecompressedResult(singleItem, compressionLevel, blockId, world);
+            ItemStack correctResult = createDecompressedResult(singleCompressedItem, compressionLevel, blockId, world);
             
             // If result is wrong, fix it
             if (!correctResult.isEmpty() && 
@@ -195,6 +274,59 @@ public class CraftingScreenHandlerMixin {
         }
         var nbt = customData.copyNbt();
         return com.compressy.util.NbtHelper.getString(nbt, "compressed_block", "");
+    }
+    
+    /**
+     * Check if the crafting grid forms a valid compression recipe.
+     * A valid compression recipe requires:
+     * - All 9 slots filled
+     * - All items are the same (ItemStack.areItemsEqual)
+     * - If compressed, all have the same compression level and block ID
+     * - Compression level < 32 (if compressed)
+     */
+    private boolean isValidCompressionRecipe(CraftingInventory craftingInventory) {
+        // Must be a 3x3 grid (9 slots)
+        if (craftingInventory.size() != 9) {
+            return false;
+        }
+        
+        // Get the first item to compare against
+        ItemStack firstStack = craftingInventory.getStack(0);
+        if (firstStack.isEmpty()) {
+            return false;
+        }
+        
+        // Check compression level if already compressed
+        int firstLevel = getCompressionLevel(firstStack);
+        if (firstLevel >= 32) {
+            return false; // Max level reached
+        }
+        
+        String firstBlockId = getCompressedBlockId(firstStack);
+        
+        // All 9 slots must contain the same item
+        for (int i = 0; i < 9; i++) {
+            ItemStack stack = craftingInventory.getStack(i);
+            if (stack.isEmpty()) {
+                return false; // All slots must be filled
+            }
+            
+            // Items must be equal (same item type)
+            if (!ItemStack.areItemsEqual(stack, firstStack)) {
+                return false;
+            }
+            
+            // If items are compressed, they must have the same compression data
+            if (firstLevel > 0) {
+                int otherLevel = getCompressionLevel(stack);
+                String otherBlockId = getCompressedBlockId(stack);
+                if (otherLevel != firstLevel || !firstBlockId.equals(otherBlockId)) {
+                    return false;
+                }
+            }
+        }
+        
+        return true; // Valid compression recipe!
     }
     
     private ItemStack createDecompressedResult(ItemStack compressedBlock, int level, String blockId, World world) {
