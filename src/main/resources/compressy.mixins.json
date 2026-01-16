@@ -4,7 +4,9 @@
   "package": "com.compressy.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
-    "CraftingScreenHandlerMixin"
+    "CraftingResultSlotMixin",
+    "CraftingScreenHandlerMixin",
+    "PlayerScreenHandlerMixin"
   ],
   "injectors": {
     "defaultRequire": 1
