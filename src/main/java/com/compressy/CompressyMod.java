@@ -342,9 +342,15 @@ public class CompressyMod implements ModInitializer {
 
     private int reloadConfig(CommandContext<ServerCommandSource> ctx) {
         ServerCommandSource source = ctx.getSource();
-        source.sendFeedback(() -> Text.literal("[Compressy] ")
-                .formatted(Formatting.GOLD).formatted(Formatting.BOLD)
-                .append(Text.literal("✓ Config reloaded!").formatted(Formatting.GREEN)), false);
+        try {
+            com.compressy.config.CompressyConfig.reload();
+            source.sendFeedback(() -> Text.literal("[Compressy] ")
+                    .formatted(Formatting.GOLD).formatted(Formatting.BOLD)
+                    .append(Text.literal("✓ Config reloaded!").formatted(Formatting.GREEN)), false);
+        } catch (Exception e) {
+            source.sendError(Text.literal("[Compressy] Failed to reload config: " + e.getMessage()));
+            LOGGER.error("Failed to reload config", e);
+        }
         return Command.SINGLE_SUCCESS;
     }
 

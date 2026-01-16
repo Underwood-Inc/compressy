@@ -1,7 +1,7 @@
 package com.compressy.mixin;
 
 import com.compressy.CompressyBlockHandler;
-import com.compressy.config.CompressyClientConfig;
+import com.compressy.config.CompressyConfig;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.DisplayEntityRenderer;
 import net.minecraft.client.util.math.MatrixStack;
@@ -37,7 +37,7 @@ public class TextDisplayEntityMixin {
         // Check if this is a compressy label entity
         if (entity.getCommandTags().contains(CompressyBlockHandler.LABEL_TAG)) {
             // Check client config - if disabled, don't render
-            if (!CompressyClientConfig.get().showRomanNumerals) {
+            if (!CompressyConfig.get().showRomanNumerals) {
                 ci.cancel(); // Skip rendering
             }
         }

@@ -217,26 +217,27 @@ public class CompressyBlockHandler {
             world.spawnEntity(marker);
         }
         
-        // 2. TEXT_DISPLAY - shows Roman numeral tier above the block
-        // Always create the entity - visibility is controlled client-side per player
-        var textDisplay = EntityType.TEXT_DISPLAY.create(world, SpawnReason.COMMAND);
-        if (textDisplay != null) {
-            textDisplay.setPosition(x, y + 1.0, z);
-            
-            String roman = toRoman(level);
-            int color = getTierColor(level);
-            
-            ((DisplayEntity.TextDisplayEntity) textDisplay).setText(
-                Text.literal(" " + roman + " ")
-                    .styled(s -> s.withColor(color).withBold(true))
-            );
-            
-            textDisplay.setBillboardMode(DisplayEntity.BillboardMode.CENTER);
-            textDisplay.addCommandTag(MARKER_TAG);
-            textDisplay.addCommandTag(LABEL_TAG);
-            textDisplay.addCommandTag("compressy.pos." + pos.getX() + "_" + pos.getY() + "_" + pos.getZ());
-            
-            world.spawnEntity(textDisplay);
+        // 2. TEXT_DISPLAY - shows Roman numeral tier above the block (if enabled in config)
+        if (com.compressy.config.CompressyConfig.get().showRomanNumerals) {
+            var textDisplay = EntityType.TEXT_DISPLAY.create(world, SpawnReason.COMMAND);
+            if (textDisplay != null) {
+                textDisplay.setPosition(x, y + 1.0, z);
+                
+                String roman = toRoman(level);
+                int color = getTierColor(level);
+                
+                ((DisplayEntity.TextDisplayEntity) textDisplay).setText(
+                    Text.literal(" " + roman + " ")
+                        .styled(s -> s.withColor(color).withBold(true))
+                );
+                
+                textDisplay.setBillboardMode(DisplayEntity.BillboardMode.CENTER);
+                textDisplay.addCommandTag(MARKER_TAG);
+                textDisplay.addCommandTag(LABEL_TAG);
+                textDisplay.addCommandTag("compressy.pos." + pos.getX() + "_" + pos.getY() + "_" + pos.getZ());
+                
+                world.spawnEntity(textDisplay);
+            }
         }
         
         // 3. BLOCK_DISPLAY OVERLAY - darkening tint based on compression level (if enabled)

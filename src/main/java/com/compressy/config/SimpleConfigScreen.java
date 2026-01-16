@@ -45,7 +45,7 @@ public class SimpleConfigScreen extends Screen {
         
         // Info text
         context.drawCenteredTextWithShadow(this.textRenderer, 
-            Text.literal("Edit config/compressy.toml to configure"), 
+            Text.literal("Edit config/compressy.toml to configure settings"), 
             this.width / 2, this.height / 2 - 30, 0xAAAAAA);
         
         context.drawCenteredTextWithShadow(this.textRenderer, 
