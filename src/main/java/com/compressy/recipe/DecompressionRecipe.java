@@ -58,43 +58,43 @@ public class DecompressionRecipe extends SpecialCraftingRecipe {
             return false;
         }
         
-        var itemId = net.minecraft.registry.Registries.ITEM.getId(compressedBlock.getItem()).toString();
-        CompressyMod.LOGGER.info("DecompressionRecipe.matches() called for item: {}", itemId);
+        // var itemId = net.minecraft.registry.Registries.ITEM.getId(compressedBlock.getItem()).toString();
+        // CompressyMod.LOGGER.info("DecompressionRecipe.matches() called for item: {}", itemId);
         
         // Debug: Check what data components exist
-        var customData = compressedBlock.get(DataComponentTypes.CUSTOM_DATA);
-        if (customData != null) {
-            var nbt = customData.copyNbt();
-            if (nbt != null) {
-                CompressyMod.LOGGER.info("  NBT keys present: {}", nbt.getKeys());
-                CompressyMod.LOGGER.info("  NBT contains compressed_level: {}", nbt.contains("compressed_level"));
-                if (nbt.contains("compressed_level")) {
-                    try {
-                        var levelOpt = nbt.getInt("compressed_level");
-                        CompressyMod.LOGGER.info("  Direct NBT read - level present: {}, value: {}", levelOpt.isPresent(), levelOpt.orElse(-1));
-                    } catch (Exception e) {
-                        CompressyMod.LOGGER.error("  Error reading compressed_level directly from NBT", e);
-                    }
-                }
-            } else {
-                CompressyMod.LOGGER.warn("  CUSTOM_DATA exists but copyNbt() returned null for {}", itemId);
-            }
-        } else {
-            CompressyMod.LOGGER.warn("  No CUSTOM_DATA component found for {}", itemId);
-        }
+        // var customData = compressedBlock.get(DataComponentTypes.CUSTOM_DATA);
+        // if (customData != null) {
+        //     var nbt = customData.copyNbt();
+        //     if (nbt != null) {
+        //         CompressyMod.LOGGER.info("  NBT keys present: {}", nbt.getKeys());
+        //         CompressyMod.LOGGER.info("  NBT contains compressed_level: {}", nbt.contains("compressed_level"));
+        //         if (nbt.contains("compressed_level")) {
+        //             try {
+        //                 var levelOpt = nbt.getInt("compressed_level");
+        //                 CompressyMod.LOGGER.info("  Direct NBT read - level present: {}, value: {}", levelOpt.isPresent(), levelOpt.orElse(-1));
+        //             } catch (Exception e) {
+        //                 CompressyMod.LOGGER.error("  Error reading compressed_level directly from NBT", e);
+        //             }
+        //         }
+        //     } else {
+        //         CompressyMod.LOGGER.warn("  CUSTOM_DATA exists but copyNbt() returned null for {}", itemId);
+        //     }
+        // } else {
+        //     CompressyMod.LOGGER.warn("  No CUSTOM_DATA component found for {}", itemId);
+        // }
         
         // CRITICAL: Check if it's a compressed block FIRST
         // This ensures our recipe takes priority over vanilla recipes
         int compressionLevel = getCompressionLevel(compressedBlock);
         String blockId = getCompressedBlockId(compressedBlock);
-        CompressyMod.LOGGER.info("  compressionLevel={}, blockId={}", compressionLevel, blockId);
+        // CompressyMod.LOGGER.info("  compressionLevel={}, blockId={}", compressionLevel, blockId);
         
         if (compressionLevel <= 0) {
-            CompressyMod.LOGGER.info("  Not compressed, returning false");
+            // CompressyMod.LOGGER.info("  Not compressed, returning false");
             return false; // Not compressed, don't match
         }
         
-        CompressyMod.LOGGER.info("  Compressed item detected! Returning true");
+        // CompressyMod.LOGGER.info("  Compressed item detected! Returning true");
         return true;
     }
 
@@ -123,7 +123,7 @@ public class DecompressionRecipe extends SpecialCraftingRecipe {
             // This ensures we get the correct item for ALL blocks, even if item/block IDs differ
             if (blockId.isEmpty()) {
                 // Fallback: use item from compressed block if blockId is missing (shouldn't happen)
-                CompressyMod.LOGGER.warn("Decompressing level 1: blockId is empty, using item from compressed block");
+                // CompressyMod.LOGGER.warn("Decompressing level 1: blockId is empty, using item from compressed block");
                 return new ItemStack(compressedBlock.getItem(), 9);
             }
             
@@ -133,11 +133,11 @@ public class DecompressionRecipe extends SpecialCraftingRecipe {
                 // Fallback: try to get item directly from blockId (might be item ID in old saves)
                 var item = net.minecraft.registry.Registries.ITEM.get(net.minecraft.util.Identifier.of(blockId));
                 if (item != null && item != net.minecraft.item.Items.AIR) {
-                    CompressyMod.LOGGER.info("Decompressing level 1: blockId was item ID, using item directly: {}", blockId);
+                    // CompressyMod.LOGGER.info("Decompressing level 1: blockId was item ID, using item directly: {}", blockId);
                     return new ItemStack(item, 9);
                 }
                 // Last resort: use item from compressed block
-                CompressyMod.LOGGER.warn("Decompressing level 1: Could not resolve blockId {}, using item from compressed block", blockId);
+                // CompressyMod.LOGGER.warn("Decompressing level 1: Could not resolve blockId {}, using item from compressed block", blockId);
                 return new ItemStack(compressedBlock.getItem(), 9);
             }
             
@@ -145,12 +145,12 @@ public class DecompressionRecipe extends SpecialCraftingRecipe {
             var item = block.asItem();
             if (item == null || item == net.minecraft.item.Items.AIR) {
                 // Shouldn't happen, but fallback
-                CompressyMod.LOGGER.error("Decompressing level 1: Block {} has no item form, using item from compressed block", blockId);
+                // CompressyMod.LOGGER.error("Decompressing level 1: Block {} has no item form, using item from compressed block", blockId);
                 return new ItemStack(compressedBlock.getItem(), 9);
             }
             
             // Log for debugging
-            CompressyMod.LOGGER.info("Decompressing level 1: blockId={}, resolved to item={}", blockId, net.minecraft.registry.Registries.ITEM.getId(item).toString());
+            // CompressyMod.LOGGER.info("Decompressing level 1: blockId={}, resolved to item={}", blockId, net.minecraft.registry.Registries.ITEM.getId(item).toString());
             
             // Create a new stack with 9 items - this is the decompressed result
             return new ItemStack(item, 9);
@@ -163,7 +163,7 @@ public class DecompressionRecipe extends SpecialCraftingRecipe {
             ItemStack output;
             if (blockId.isEmpty()) {
                 // Fallback: use item from compressed block if blockId is missing
-                CompressyMod.LOGGER.warn("Decompressing level {}: blockId is empty, using item from compressed block", newLevel);
+                // CompressyMod.LOGGER.warn("Decompressing level {}: blockId is empty, using item from compressed block", newLevel);
                 output = new ItemStack(compressedBlock.getItem(), 9);
             } else {
                 // Get the block from the stored block ID
@@ -172,11 +172,11 @@ public class DecompressionRecipe extends SpecialCraftingRecipe {
                     // Fallback: try to get item directly from blockId (might be item ID in old saves)
                     var item = net.minecraft.registry.Registries.ITEM.get(net.minecraft.util.Identifier.of(blockId));
                     if (item != null && item != net.minecraft.item.Items.AIR) {
-                        CompressyMod.LOGGER.info("Decompressing level {}: blockId was item ID, using item directly: {}", newLevel, blockId);
+                        // CompressyMod.LOGGER.info("Decompressing level {}: blockId was item ID, using item directly: {}", newLevel, blockId);
                         output = new ItemStack(item, 9);
                     } else {
                         // Last resort: use item from compressed block
-                        CompressyMod.LOGGER.warn("Decompressing level {}: Could not resolve blockId {}, using item from compressed block", newLevel, blockId);
+                        // CompressyMod.LOGGER.warn("Decompressing level {}: Could not resolve blockId {}, using item from compressed block", newLevel, blockId);
                         output = new ItemStack(compressedBlock.getItem(), 9);
                     }
                 } else {
@@ -184,7 +184,7 @@ public class DecompressionRecipe extends SpecialCraftingRecipe {
                     var item = block.asItem();
                     if (item == null || item == net.minecraft.item.Items.AIR) {
                         // Shouldn't happen, but fallback
-                        CompressyMod.LOGGER.error("Decompressing level {}: Block {} has no item form, using item from compressed block", newLevel, blockId);
+                        // CompressyMod.LOGGER.error("Decompressing level {}: Block {} has no item form, using item from compressed block", newLevel, blockId);
                         output = new ItemStack(compressedBlock.getItem(), 9);
                     } else {
                         output = new ItemStack(item, 9);
@@ -394,17 +394,17 @@ public class DecompressionRecipe extends SpecialCraftingRecipe {
             return 0;
         }
         
-        var itemId = net.minecraft.registry.Registries.ITEM.getId(stack.getItem()).toString();
+        // var itemId = net.minecraft.registry.Registries.ITEM.getId(stack.getItem()).toString();
         var customData = stack.get(DataComponentTypes.CUSTOM_DATA);
         
         if (customData == null) {
-            CompressyMod.LOGGER.debug("getCompressionLevel: {} has no CUSTOM_DATA", itemId);
+            // CompressyMod.LOGGER.debug("getCompressionLevel: {} has no CUSTOM_DATA", itemId);
             return 0;
         }
         
         var nbt = customData.copyNbt();
         if (nbt == null) {
-            CompressyMod.LOGGER.warn("getCompressionLevel: {} has CUSTOM_DATA but copyNbt() returned null!", itemId);
+            // CompressyMod.LOGGER.warn("getCompressionLevel: {} has CUSTOM_DATA but copyNbt() returned null!", itemId);
             return 0;
         }
         
@@ -414,22 +414,22 @@ public class DecompressionRecipe extends SpecialCraftingRecipe {
             try {
                 level = nbt.getInt("compressed_level").orElse(0);
             } catch (Exception e) {
-                CompressyMod.LOGGER.warn("getCompressionLevel: Failed to read compressed_level for {}, trying alternative method", itemId, e);
+                // CompressyMod.LOGGER.warn("getCompressionLevel: Failed to read compressed_level for {}, trying alternative method", itemId, e);
                 // Try direct access
                 try {
                     var opt = nbt.getInt("compressed_level");
                     level = opt.isPresent() ? opt.get() : 0;
                 } catch (Exception e2) {
-                    CompressyMod.LOGGER.error("getCompressionLevel: All methods failed for {}", itemId, e2);
+                    // CompressyMod.LOGGER.error("getCompressionLevel: All methods failed for {}", itemId, e2);
                 }
             }
         }
         
-        if (level > 0) {
-            CompressyMod.LOGGER.info("getCompressionLevel: {} detected as compressed level {}", itemId, level);
-        } else {
-            CompressyMod.LOGGER.debug("getCompressionLevel: {} not compressed (level=0), nbt keys: {}", itemId, nbt.getKeys());
-        }
+        // if (level > 0) {
+        //     CompressyMod.LOGGER.info("getCompressionLevel: {} detected as compressed level {}", itemId, level);
+        // } else {
+        //     CompressyMod.LOGGER.debug("getCompressionLevel: {} not compressed (level=0), nbt keys: {}", itemId, nbt.getKeys());
+        // }
         
         return level;
     }

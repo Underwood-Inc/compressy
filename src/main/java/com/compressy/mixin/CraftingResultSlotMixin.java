@@ -75,9 +75,9 @@ public class CraftingResultSlotMixin {
             return;
         }
         
-        String gridType = input.size() == 4 ? "2x2 player inventory" : "3x3 crafting table";
-        CompressyMod.LOGGER.info("CraftingResultSlotMixin: Handling decompression in {} for level {} block (stack size: {})", 
-            gridType, compressionLevel, compressedBlock.getCount());
+        // String gridType = input.size() == 4 ? "2x2 player inventory" : "3x3 crafting table";
+        // CompressyMod.LOGGER.info("CraftingResultSlotMixin: Handling decompression in {} for level {} block (stack size: {})", 
+        //     gridType, compressionLevel, compressedBlock.getCount());
         
         // Consume ONE compressed block from the input
         // IMPORTANT: Always use setStack to ensure inventory listeners are triggered!
@@ -93,8 +93,8 @@ public class CraftingResultSlotMixin {
         // Mark input as dirty to trigger onContentChanged for result recalculation
         input.markDirty();
         
-        CompressyMod.LOGGER.info("CraftingResultSlotMixin: Consumed 1 compressed block from slot {} in {} (remaining: {})", 
-            compressedSlotIndex, gridType, input.getStack(compressedSlotIndex).getCount());
+        // CompressyMod.LOGGER.info("CraftingResultSlotMixin: Consumed 1 compressed block from slot {} in {} (remaining: {})", 
+        //     compressedSlotIndex, gridType, input.getStack(compressedSlotIndex).getCount());
         
         // CRITICAL: Cancel vanilla's onTakeItem to prevent double-consumption!
         // We've already consumed the input, don't let vanilla do it again.

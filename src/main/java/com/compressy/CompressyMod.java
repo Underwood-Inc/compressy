@@ -118,31 +118,31 @@ public class CompressyMod implements ModInitializer {
         
         // Load configuration
         com.compressy.config.CompressyConfig.load();
-        LOGGER.info("Configuration loaded!");
+        // LOGGER.info("Configuration loaded!");
         
         // Register custom recipe types
         // NOTE: Only compression uses recipes - decompression uses direct mixin interception
         registerRecipes();
-        LOGGER.info("Compression recipes registered!");
-        LOGGER.info("Decompression: Using direct mixin interception (bypasses broken recipe matching)");
+        // LOGGER.info("Compression recipes registered!");
+        // LOGGER.info("Decompression: Using direct mixin interception (bypasses broken recipe matching)");
         
         // Register block placement handler based on mode
         if (LITE_MODE) {
             // LITE: Just prevent placement entirely
             CompressyBlockHandlerLite.register();
-            LOGGER.info("LITE mode: Block placement DISABLED (inventory-only)");
+            // LOGGER.info("LITE mode: Block placement DISABLED (inventory-only)");
         } else {
             // FULL: Allow placement with marker entities
             CompressyBlockHandler.register();
-            LOGGER.info("FULL mode: Block placement enabled with data preservation");
+            // LOGGER.info("FULL mode: Block placement enabled with data preservation");
         }
         
-        LOGGER.info("Datapack auto-installed.");
-        LOGGER.info("Registering commands...");
+        // LOGGER.info("Datapack auto-installed.");
+        // LOGGER.info("Registering commands...");
 
         registerCommands();
 
-        LOGGER.info("Commands registered! Use /cblocks help");
+        // LOGGER.info("Commands registered! Use /cblocks help");
         LOGGER.info("===========================================");
     }
     
@@ -169,8 +169,8 @@ public class CompressyMod implements ModInitializer {
         //     DECOMPRESSION_RECIPE_SERIALIZER
         // );
         
-        LOGGER.info("Registered compression recipe type");
-        LOGGER.info("Decompression: Using mixin interception (recipe system bypassed)");
+        // LOGGER.info("Registered compression recipe type");
+        // LOGGER.info("Decompression: Using mixin interception (recipe system bypassed)");
     }
 
     /**
@@ -212,7 +212,7 @@ public class CompressyMod implements ModInitializer {
             cblocks.then(adminCommand);
 
             dispatcher.register(cblocks);
-            LOGGER.info("Registered /cblocks command");
+            // LOGGER.info("Registered /cblocks command");
         });
     }
 
@@ -316,7 +316,7 @@ public class CompressyMod implements ModInitializer {
             return Command.SINGLE_SUCCESS;
         } catch (Exception e) {
             source.sendError(Text.literal("This command must be run by a player!"));
-            LOGGER.error("Error showing block info", e);
+            // LOGGER.error("Error showing block info", e);
             return 0;
         }
     }
@@ -349,7 +349,7 @@ public class CompressyMod implements ModInitializer {
                     .append(Text.literal("✓ Config reloaded!").formatted(Formatting.GREEN)), false);
         } catch (Exception e) {
             source.sendError(Text.literal("[Compressy] Failed to reload config: " + e.getMessage()));
-            LOGGER.error("Failed to reload config", e);
+            // LOGGER.error("Failed to reload config", e);
         }
         return Command.SINGLE_SUCCESS;
     }

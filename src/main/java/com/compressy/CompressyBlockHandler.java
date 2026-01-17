@@ -192,7 +192,7 @@ public class CompressyBlockHandler {
             return false; // Cancel normal block break (we handled it)
         });
         
-        CompressyMod.LOGGER.info("Compressed block handler registered (ACTUAL BLOCKS + marker entities)");
+        // CompressyMod.LOGGER.info("Compressed block handler registered (ACTUAL BLOCKS + marker entities)");
     }
     
     /**
@@ -346,7 +346,7 @@ public class CompressyBlockHandler {
         }
         
         if (item == null || item == net.minecraft.item.Items.AIR) {
-            CompressyMod.LOGGER.error("createCompressedItem: Could not resolve blockId {} to any item", blockId);
+            // CompressyMod.LOGGER.error("createCompressedItem: Could not resolve blockId {} to any item", blockId);
             // Last resort: use stone
             item = net.minecraft.item.Items.STONE;
         }

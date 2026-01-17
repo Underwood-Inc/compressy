@@ -55,7 +55,7 @@ public class CompressyBlockHandlerLite {
             return ActionResult.FAIL;
         });
         
-        CompressyMod.LOGGER.info("Compressed block handler (LITE) registered - placement disabled");
+        // CompressyMod.LOGGER.info("Compressed block handler (LITE) registered - placement disabled");
     }
     
     private static int getCompressionLevel(ItemStack stack) {

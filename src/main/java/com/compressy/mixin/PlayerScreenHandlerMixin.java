@@ -115,7 +115,7 @@ public abstract class PlayerScreenHandlerMixin {
             return;
         }
         
-        CompressyMod.LOGGER.info("PlayerScreenHandlerMixin: Compressed block detected in 2x2 grid, level {}", compressionLevel);
+        // CompressyMod.LOGGER.info("PlayerScreenHandlerMixin: Compressed block detected in 2x2 grid, level {}", compressionLevel);
         
         String blockId = getCompressedBlockId(singleCompressedItem);
         if (blockId.isEmpty()) {
@@ -127,8 +127,8 @@ public abstract class PlayerScreenHandlerMixin {
         
         if (!result.isEmpty() && resultSlot != null) {
             resultSlot.setStack(result);
-            CompressyMod.LOGGER.info("PlayerScreenHandlerMixin: Set result to {} x{}", 
-                net.minecraft.registry.Registries.ITEM.getId(result.getItem()).toString(), result.getCount());
+            // CompressyMod.LOGGER.info("PlayerScreenHandlerMixin: Set result to {} x{}", 
+            //     net.minecraft.registry.Registries.ITEM.getId(result.getItem()).toString(), result.getCount());
         }
     }
     
@@ -214,7 +214,7 @@ public abstract class PlayerScreenHandlerMixin {
                  !net.minecraft.registry.Registries.ITEM.getId(currentResult.getItem()).equals(
                      net.minecraft.registry.Registries.ITEM.getId(correctResult.getItem())) ||
                  currentResult.getCount() != correctResult.getCount())) {
-                CompressyMod.LOGGER.warn("PlayerScreenHandlerMixin TAIL: Vanilla overwrote result, fixing");
+                // CompressyMod.LOGGER.warn("PlayerScreenHandlerMixin TAIL: Vanilla overwrote result, fixing");
                 resultSlot.setStack(correctResult);
             }
         }

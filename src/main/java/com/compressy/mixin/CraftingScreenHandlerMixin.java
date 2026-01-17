@@ -36,24 +36,24 @@ public class CraftingScreenHandlerMixin {
         at = @At("HEAD")
     )
     private void checkForCompressedBlock(net.minecraft.inventory.Inventory inventory, CallbackInfo ci) {
-        CompressyMod.LOGGER.info("CraftingScreenHandlerMixin.onContentChanged: CALLED AT HEAD");
+        // CompressyMod.LOGGER.info("CraftingScreenHandlerMixin.onContentChanged: CALLED AT HEAD");
         
         // Get the world from the player
         if (player == null) {
-            CompressyMod.LOGGER.debug("  Player is null");
+            // CompressyMod.LOGGER.debug("  Player is null");
             return;
         }
         
         World world = player.getEntityWorld();
         if (world == null || world.isClient()) {
-            CompressyMod.LOGGER.debug("  World is null or client");
+            // CompressyMod.LOGGER.debug("  World is null or client");
             return;
         }
         
         // Check if there's exactly one item (decompression pattern) - CHECK FIRST BEFORE VANILLA
         // Need to cast to CraftingInventory to access the crafting grid
         if (!(inventory instanceof CraftingInventory craftingInventory)) {
-            CompressyMod.LOGGER.debug("  Not a CraftingInventory");
+            // CompressyMod.LOGGER.debug("  Not a CraftingInventory");
             return;
         }
         
@@ -62,16 +62,16 @@ public class CraftingScreenHandlerMixin {
         int compressedSlotCount = 0;
         int totalItemSlots = 0;
         
-        CompressyMod.LOGGER.info("  Checking {} slots", craftingInventory.size());
+        // CompressyMod.LOGGER.info("  Checking {} slots", craftingInventory.size());
         for (int i = 0; i < craftingInventory.size(); i++) {
             ItemStack stack = craftingInventory.getStack(i);
             if (!stack.isEmpty()) {
                 totalItemSlots++;
                 int compressionLevel = getCompressionLevel(stack);
-                CompressyMod.LOGGER.info("  Slot {}: {} x{} (compressed: {})", i, 
-                    net.minecraft.registry.Registries.ITEM.getId(stack.getItem()).toString(), 
-                    stack.getCount(),
-                    compressionLevel > 0 ? "YES" : "NO");
+                // CompressyMod.LOGGER.info("  Slot {}: {} x{} (compressed: {})", i, 
+                //     net.minecraft.registry.Registries.ITEM.getId(stack.getItem()).toString(), 
+                //     stack.getCount(),
+                //     compressionLevel > 0 ? "YES" : "NO");
                 
                 if (compressionLevel > 0) {
                     compressedSlotCount++;
@@ -84,7 +84,7 @@ public class CraftingScreenHandlerMixin {
         
         // CRITICAL: If no compressed blocks, let vanilla handle it - DO NOT INTERFERE AT ALL
         if (compressedSlotCount == 0) {
-            CompressyMod.LOGGER.debug("  No compressed blocks found ({} item slots), letting vanilla handle it - NOT BLOCKING", totalItemSlots);
+            // CompressyMod.LOGGER.debug("  No compressed blocks found ({} item slots), letting vanilla handle it - NOT BLOCKING", totalItemSlots);
             return; // Early return - do not touch result slot at all
         }
         
@@ -92,16 +92,16 @@ public class CraftingScreenHandlerMixin {
         if (compressedSlotCount > 1) {
             if (isValidCompressionRecipe(craftingInventory)) {
                 // Valid compression recipe (9 identical compressed blocks) - allow it
-                CompressyMod.LOGGER.info("  Multiple compressed blocks form valid compression recipe - allowing");
+                // CompressyMod.LOGGER.info("  Multiple compressed blocks form valid compression recipe - allowing");
                 return; // Let CompressionRecipe handle it
             } else {
                 // Invalid pattern - block to prevent vanilla recipes
-                CompressyMod.LOGGER.warn("  Multiple slots ({}) contain compressed blocks but NOT a valid compression recipe - BLOCKING", compressedSlotCount);
+                // CompressyMod.LOGGER.warn("  Multiple slots ({}) contain compressed blocks but NOT a valid compression recipe - BLOCKING", compressedSlotCount);
                 CraftingScreenHandler handler = (CraftingScreenHandler)(Object)this;
                 Slot resultSlot = handler.getSlot(0);
                 if (resultSlot != null) {
                     resultSlot.setStack(ItemStack.EMPTY);
-                    CompressyMod.LOGGER.info("  Result slot cleared - crafting blocked");
+                    // CompressyMod.LOGGER.info("  Result slot cleared - crafting blocked");
                 }
                 return; // Block crafting completely
             }
@@ -109,31 +109,31 @@ public class CraftingScreenHandlerMixin {
         
         // Exactly one slot has compressed blocks - proceed with decompression
         if (singleCompressedItem.isEmpty()) {
-            CompressyMod.LOGGER.debug("  Grid is empty");
+            // CompressyMod.LOGGER.debug("  Grid is empty");
             return;
         }
         
-        CompressyMod.LOGGER.info("  Found single compressed slot: {} x{}", 
-            net.minecraft.registry.Registries.ITEM.getId(singleCompressedItem.getItem()).toString(), 
-            singleCompressedItem.getCount());
+        // CompressyMod.LOGGER.info("  Found single compressed slot: {} x{}", 
+        //     net.minecraft.registry.Registries.ITEM.getId(singleCompressedItem.getItem()).toString(), 
+        //     singleCompressedItem.getCount());
         
         // Check compression level
         int compressionLevel = getCompressionLevel(singleCompressedItem);
-        CompressyMod.LOGGER.info("  Compression level: {}", compressionLevel);
+        // CompressyMod.LOGGER.info("  Compression level: {}", compressionLevel);
         
         if (compressionLevel <= 0) {
-            CompressyMod.LOGGER.warn("  Compression level is 0 but slot was marked as compressed - this shouldn't happen");
+            // CompressyMod.LOGGER.warn("  Compression level is 0 but slot was marked as compressed - this shouldn't happen");
             return;
         }
         
         // IT'S A COMPRESSED BLOCK! Set result IMMEDIATELY before vanilla can interfere
-        CompressyMod.LOGGER.info("*** COMPRESSED BLOCK DETECTED! Level {} - Setting result BEFORE vanilla ***", compressionLevel);
+        // CompressyMod.LOGGER.info("*** COMPRESSED BLOCK DETECTED! Level {} - Setting result BEFORE vanilla ***", compressionLevel);
         
         String blockId = getCompressedBlockId(singleCompressedItem);
-        CompressyMod.LOGGER.info("  Block ID: '{}'", blockId);
+        // CompressyMod.LOGGER.info("  Block ID: '{}'", blockId);
         if (blockId.isEmpty()) {
             blockId = net.minecraft.registry.Registries.ITEM.getId(singleCompressedItem.getItem()).toString();
-            CompressyMod.LOGGER.warn("  Block ID was empty, using item ID: {}", blockId);
+            // CompressyMod.LOGGER.warn("  Block ID was empty, using item ID: {}", blockId);
         }
         
         // Create decompressed result
@@ -145,14 +145,16 @@ public class CraftingScreenHandlerMixin {
             Slot resultSlot = handler.getSlot(0);
             if (resultSlot != null) {
                 resultSlot.setStack(result);
-                CompressyMod.LOGGER.info("*** SUCCESS! Result set to {} x{} BEFORE vanilla calculation ***", 
-                    net.minecraft.registry.Registries.ITEM.getId(result.getItem()).toString(), result.getCount());
-            } else {
-                CompressyMod.LOGGER.error("  ERROR: Result slot is null!");
+                // CompressyMod.LOGGER.info("*** SUCCESS! Result set to {} x{} BEFORE vanilla calculation ***", 
+                //     net.minecraft.registry.Registries.ITEM.getId(result.getItem()).toString(), result.getCount());
             }
-        } else {
-            CompressyMod.LOGGER.error("  ERROR: createDecompressedResult returned EMPTY!");
+            // else {
+            //     CompressyMod.LOGGER.error("  ERROR: Result slot is null!");
+            // }
         }
+        // else {
+        //     CompressyMod.LOGGER.error("  ERROR: createDecompressedResult returned EMPTY!");
+        // }
     }
     
     @Inject(
@@ -204,7 +206,7 @@ public class CraftingScreenHandlerMixin {
                 return; // Let CompressionRecipe handle it
             } else {
                 // Invalid pattern - block to prevent vanilla recipes
-                CompressyMod.LOGGER.warn("TAIL: Multiple slots ({}) contain compressed blocks but NOT a valid compression recipe - BLOCKING", compressedSlotCount);
+                // CompressyMod.LOGGER.warn("TAIL: Multiple slots ({}) contain compressed blocks but NOT a valid compression recipe - BLOCKING", compressedSlotCount);
                 CraftingScreenHandler handler = (CraftingScreenHandler)(Object)this;
                 Slot resultSlot = handler.getSlot(0);
                 if (resultSlot != null) {
@@ -244,9 +246,9 @@ public class CraftingScreenHandlerMixin {
                  !net.minecraft.registry.Registries.ITEM.getId(currentResult.getItem()).equals(
                      net.minecraft.registry.Registries.ITEM.getId(correctResult.getItem())) ||
                  currentResult.getCount() != correctResult.getCount())) {
-                CompressyMod.LOGGER.warn("Vanilla overwrote result! Fixing: {} -> {}", 
-                    currentResult.isEmpty() ? "EMPTY" : net.minecraft.registry.Registries.ITEM.getId(currentResult.getItem()).toString(),
-                    net.minecraft.registry.Registries.ITEM.getId(correctResult.getItem()).toString());
+                // CompressyMod.LOGGER.warn("Vanilla overwrote result! Fixing: {} -> {}", 
+                //     currentResult.isEmpty() ? "EMPTY" : net.minecraft.registry.Registries.ITEM.getId(currentResult.getItem()).toString(),
+                //     net.minecraft.registry.Registries.ITEM.getId(correctResult.getItem()).toString());
                 resultSlot.setStack(correctResult);
             }
         }
